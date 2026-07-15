@@ -1,6 +1,6 @@
 # Fact-Check Protocol for High Fact-Density Tasks (v2.2 + v2.4)
 
-> Triggers when task has "hallucination tolerance = extremely low + citation requirement = academic-grade" (policy verification / BOM selection / Chinese primary source research / regulation clause verification / model license verification). Reports delivered directly from Recon **must undergo independent fact-checking** — the main session and SubAgents' own reports cannot self-score.
+> Triggers when task has "hallucination tolerance = extremely low + citation requirement = academic-grade" (policy verification / BOM selection / Chinese primary source research / regulation clause verification / model license verification). Reports delivered directly from Recon **must undergo independent fact-checking** — the orchestrator and recon workers cannot self-score.
 
 ## Layer 0 — Primary Source Locator Direct Reading (Principle 7 invariant)
 
@@ -14,21 +14,21 @@ For high-risk claims in the ledger **that have locators, read the primary source
 ## v2.4 Pre-Check Discipline
 
 1. **Default mode = Deep Research** (reverting "Pro Search normal mode" default) — fact-checking is a rigorous anchor-level task; **rigor > quota savings**; Deep Research quota exists for exactly this type of task; regular Pro Search is only for ad-hoc lightweight verification
-2. **Cross-faction mandatory discipline** (triggers only for same-faction content) — When evaluating Anthropic products / LLM benchmarks involving Claude / AI industry narratives, **at least one cross-faction fact-checker must be used** (OpenAI's ChatGPT Deep Research or Google's Gemini Deep Research) for the final **false humility dimension judgment**; **Anthropic-family reviewers (including Sonnet SubAgent / semi-independent Sonnet fact-check) cannot serve as false humility final arbiter** — same-source reviewers are inherently blind to "appears self-deprecating but actually preserves faction advantage" high-dimensional PR-style bias
+2. **Cross-faction mandatory discipline** (triggers only for same-faction content) — When evaluating an AI vendor's products, benchmarks involving its own models, or its industry narratives, **at least one reviewer from another vendor family must be used** for the final **false humility dimension judgment**; same-family workers cannot serve as the final arbiter — they are inherently blind to "appears self-deprecating but actually preserves faction advantage" high-dimensional PR-style bias
 3. **Cross-validation recommended pairing (v2.4)**: Perplexity DR (Layer 1 primary) + ChatGPT DR (cross-faction calibration, replacing Gemini) + Gemini DR (backup "expansion set blind spot scanning" — known "yi/billion" unit trap + excessive aggregate site acceptance)
 4. **Data source 4-tier priority**: benchmark owner / regulation text / company official site (highest) > independent test > vendor self-report > aggregate site / mirror (lowest); large-gap numbers (≥10pp) must have owner direct citation; cross-tier discrepancies are not "conflicts" — both must be annotated
 
 ## Fact-Check Two-Layer Flow
 
-### Layer 1 — Perplexity Pro Search Primary Fact-Check (~5 min)
+### Layer 1 — Perplexity Deep Research Primary Fact-Check (~5 min; downgrade to Pro Search only for ad-hoc lightweight verification)
 
-- Perplexity Pro Search recommended as primary — sentence-level citation + industry-leading citation transparency is its strength
+- Perplexity Deep Research recommended as primary — sentence-level citation + industry-leading citation transparency is its strength
 - Does not rely on training data, forces web search to pull authoritative sources
 - Output: verdict table (✅/⚠️/❌/🟡) + inline citations
 
-### Layer 2 — SubAgent Primary-Source Check for Perplexity Blind Spots (~3 min, critical material only)
+### Layer 2 — Independent Worker Primary-Source Check for Perplexity Blind Spots (~3 min, critical material only)
 
-- Dispatch a general-purpose SubAgent to read EUR-Lex / vendor official / arxiv primary sources
+- Dispatch an independent worker through the current host to read EUR-Lex / vendor official / arxiv primary sources
 - Trigger conditions (any one): ① Perplexity single-source conclusion (no multi-source convergence) ② policy-sensitive topic ③ critical material (core scoring items affecting business decisions)
 - **Don't re-run everything**, only check 1-2 blind spots Perplexity didn't fully verify
 
@@ -40,9 +40,9 @@ For high-risk claims in the ledger **that have locators, read the primary source
 
 ### Empirical Cases
 
-- **EU AI Act verification**: Perplexity Layer 1 was multi-source convergent and high-confidence on most items; a few blind spots were caught by SubAgent Layer 2 primary source reading → two independent fact-checkers agreed on critical material, correcting several over-scored items in the original report.
+- **EU AI Act verification**: Perplexity Layer 1 was multi-source convergent and high-confidence on most items; a few blind spots were caught by Layer 2 primary source reading → two independent fact-checkers agreed on critical material, correcting several over-scored items in the original report.
 - **License verification conflict**: The same EU AI Act report was fact-checked by both Gemini + Perplexity, which directly conflicted on DeepSeek-V3 license — Gemini said "all MIT" (wrong), Perplexity said "custom license" (correct). One `curl https://huggingface.co/deepseek-ai/DeepSeek-V3/raw/main/LICENSE-MODEL` resolved it. An LLM's self-assessed "95%+ accuracy" is a typical training-data recall over-confidence trap.
-- **Self-bias audit**: A self-bias audit framework self-assessed as "passed" was **unanimously overturned** by cross-faction Deep Research — false-humility bias invisible to self-assessment is a natural blind spot for same-source reviewers. ~65% of SubAgent citation sources came from aggregate sites; benchmark owner direct citations were < 30%.
+- **Self-bias audit**: A self-bias audit framework self-assessed as "passed" was **unanimously overturned** by cross-faction Deep Research — false-humility bias invisible to self-assessment is a natural blind spot for same-source reviewers. ~65% of worker citation sources came from aggregate sites; benchmark owner direct citations were < 30%.
 
 ---
 
@@ -50,7 +50,7 @@ For high-risk claims in the ledger **that have locators, read the primary source
 
 > Generalization of v2.2 fact-check protocol — v2.2 only triggered for "high fact-density tasks"; v3 extends to all Recon direct delivery reports.
 >
-> **Core defense**: plausible unsupported success — the main session reads SubAgent summaries instead of raw artifacts, allowing SubAgent micro-hallucinations to propagate to the final report.
+> **Core defense**: plausible unsupported success — the orchestrator reads worker summaries instead of raw artifacts, allowing worker micro-hallucinations to propagate to the final report.
 
 **Trigger**: enabled by default for the Recon direct delivery branch (Step 3 selects "deliver directly"); user can skip with `--skip-mini-assurance`; high fact-density tasks continue using v2.2 fact-check (v3 is its generalization, no double-run).
 
@@ -58,10 +58,12 @@ For high-risk claims in the ledger **that have locators, read the primary source
 
 ### Flow
 
-After the report draft is generated but before output to user, dispatch a **fresh reviewer SubAgent** (independent context, does not read the draft's "summary / conclusions" sections).
+After the report draft is generated but before output to user, dispatch a **fresh reviewer worker** through the current host (independent context, does not read the draft's "summary / conclusions" sections).
+
+**No-slot fallback (must be explicit in the audit):** If the host has no **fresh worker slot**, first reuse an **idle independent worker** that did not participate in this run and give it only the ledger, raw artifact paths, and key-claim list. If no independent worker is available, the orchestrator performs the same artifact-only checks as a **non-independent fallback**, labels `audit_independence: degraded`, and never reports this as an independent review. Do not silently omit Mini Assurance.
 
 Reviewer input:
-- **Claim Ledger** (Step 2.5 output) + Round 1/Round 2 SubAgent artifact .md paths + draft's "key claim list"
+- **Claim Ledger** (`<run_dir>/ledger.md`) + Round 1/Round 2 worker artifacts (`<run_dir>/artifacts/*.md`, persisted by the orchestrator in Step 0) + draft's "key claim list"
 - **Task**: for each report topic sentence, assign one of 3 labels:
   - ✅ `supported`: artifact contains original text support (must attach artifact path + key sentence)
   - ⚠️ `unverifiable`: not found in artifact (goes to "needs manual verification" list)
@@ -70,11 +72,11 @@ Reviewer input:
 - **Spot check**: 20% random sample of soft judgments
 - **Prohibited**: reading draft's "summary / conclusions" sections; changing writing style; filling in claims; outputting rewrite suggestions
 
-**Output**: append a `## Mini Assurance Audit` section at the end of the final report (3-label stats + unverifiable/conflict list + artifact reference paths).
+**Output**: append a `## Mini Assurance Audit` section at the end of the final report (3-label stats + unverifiable/conflict list + artifact reference paths), and persist the same section to `<run_dir>/audit.md`.
 
 **Cost**: +5-10 min per research run, +10-15% tokens. **Expected effect**: accuracy 70-80% → 85-90%.
 
 **Upgrade path** (evaluate reviewer hit rate after accumulating cases):
 - < 5% hit rate → tighten rubric
 - 10-30% hit rate → maintain current approach
-- > 50% hit rate → upstream Recon quality issue, strengthen SubAgent instructions
+- > 50% hit rate → upstream Recon quality issue, strengthen worker instructions

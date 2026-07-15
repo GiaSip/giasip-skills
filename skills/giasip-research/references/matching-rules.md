@@ -10,7 +10,7 @@
 Receive research task
 │
 ├── 1. Can we handle it in-house?
-│   ├── Simple fact lookup → Claude Code does it directly (Firecrawl/WebSearch)
+│   ├── Simple fact lookup → current host verifies it directly with native web tools
 │   └── Needs deep report / walled-garden platform / cross-validation → continue
 │
 ├── 2. Language routing
@@ -125,7 +125,7 @@ Receive research task
 
 Match by the most critical requirement dimension — prioritize the core need, then layer on combination strategies.
 
-If the task involves both coding + research → use `/dispatch` for the coding tool + `/research` for the research platform.
+If the task involves both coding + research → use the host's dispatch skill for coding/model routing and `$giasip-research` or `/giasip-research` for research.
 
 ---
 

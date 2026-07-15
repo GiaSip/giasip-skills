@@ -1,30 +1,33 @@
 # giasip-skills
 
-> ✦ GiaSip 的 [Claude Code](https://claude.com/claude-code) 自定义技能集 · github.com/GiaSip
+> ✦ GiaSip 的跨运行时 Agent 技能集 · github.com/GiaSip
 >
-> *Claude Code 原生技能。另有 vendor 中立的 portable playbook 版本（Codex 及其他 agent 可用），单独维护。*
+> *`giasip-research` 共用一套调研方法，内置 Claude Code 和 Codex 两层薄适配；`giasip-dispatch` 仍是 Claude Code 原生技能。*
 
 | 技能 | 说明 |
 |------|------|
-| **giasip-research** | 研究调度 — 先用 SubAgent 快速侦察（Quick Recon）摸清方向和知识缺口，再决定是否升级到外部 Deep Research 平台。内置两轮 Recon、Claim Ledger 质控、独立 fact-check 协议，让外部平台只处理真正需要深挖的盲点。 |
+| **giasip-research** | 跨运行时研究调度 — 先用当前 host 的 worker 和网页工具做广度优先 Quick Recon，再决定是否升级到外部 Deep Research。内置两轮 Recon、Claim Ledger、持久化和独立 fact-check。 |
 | **giasip-dispatch** | 多模型调用器 — 把任务或 prompt 一键派发给其他 AI 模型（Codex / Gemini / Kimi / DeepSeek / 豆包 / Qwen / GLM / MiniMax）执行并取回结果。纯调用器形态，不内置选型偏好（选哪个模型、单派多派交给你自己的 Claude 临场判断）。 |
 
 ## 安装
 
-### 方式一：`npx skills add`（推荐，一行装）
+### 方式一：`npx skills add`（推荐）
 
 ```bash
-# 安装全部技能（全局，装到 ~/.claude/skills/）
-npx skills add GiaSip/giasip-skills -g --all
+# Claude Code：安装全部技能
+npx skills add GiaSip/giasip-skills --global --skill '*' --agent claude-code --yes
 
-# 只装某一个
-npx skills add GiaSip/giasip-skills -g --skill giasip-research
+# Claude Code：只安装 Research
+npx skills add GiaSip/giasip-skills --global --skill giasip-research --agent claude-code --yes
+
+# Codex：只安装 Research
+npx skills add GiaSip/giasip-skills --global --skill giasip-research --agent codex --yes
 
 # 先看看仓库里有哪些技能
 npx skills add GiaSip/giasip-skills -l
 ```
 
-### 方式二：作为 Claude Code plugin
+### 方式二：作为 Claude Code plugin（仅 Claude Code）
 
 ```
 /plugin marketplace add GiaSip/giasip-skills
@@ -35,17 +38,23 @@ npx skills add GiaSip/giasip-skills -l
 
 ```bash
 git clone https://github.com/GiaSip/giasip-skills
+# Claude Code
 cp -R giasip-skills/skills/giasip-research ~/.claude/skills/giasip-research
 cp -R giasip-skills/skills/giasip-dispatch ~/.claude/skills/giasip-dispatch
+
+# Codex / 兼容 Agent Skills 的 host
+cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 ```
 
-> 三种装法触发命令都是 `/giasip-research`、`/giasip-dispatch`（署名焊在技能名上，不依赖安装方式），也可直接描述意图（如「帮我调研一下…」「用 Kimi 跑一下…」）自动触发。派遣脚本就在技能自己的 `scripts/` 子目录里，dispatch 的 SKILL.md 会让 agent 在 session 开始时把 `BASE_DIR` 设为该目录，装在 `~/.claude/skills/` 还是 plugin 缓存目录都能用。
+> Claude Code 中用 `/giasip-research`，Codex 中用 `$giasip-research`；两者也可按自然语言调研意图自动触发。`giasip-dispatch` 仍只在 Claude Code 中用 `/giasip-dispatch`。
 
 ---
 
 ## giasip-research — 依赖
 
-**基本零外部依赖，开箱即用**——主要用 Claude Code 自带的 WebSearch / WebFetch / SubAgent（WebFetch 遇 JS 渲染页面时可选用 Firecrawl 作 fallback，非必需）。
+**基本零外部依赖，开箱即用**——Claude Code 映射到 WebSearch / WebFetch / SubAgent，Codex 映射到当前可用的 web 工具 / `spawn_agent`。如果并发 worker 不可用，会明确改为顺序执行同一批切面，而不是静默减少覆盖面。
+
+> 本目录是中文阅读版；可安装的行为唯一真源是仓库根目录下的 `skills/giasip-research/`，以避免中英两份执行逻辑漂移。
 
 唯一需配置：`skills/giasip-research/references/platform-profiles.md` 里有一张「平台可用性」表，按你实际订阅的 Deep Research 平台（ChatGPT / Gemini / Perplexity / Kimi 等）填 ✅/❌，匹配逻辑会据此跳过未订阅的平台。模型阵容见 `skills/giasip-dispatch/references/model-roster.md`。
 

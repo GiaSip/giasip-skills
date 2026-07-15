@@ -1,0 +1,6 @@
+interface:
+  display_name: "GiaSip Research"
+  short_description: "Evidence-gated research across Claude Code and Codex"
+  default_prompt: "Use $giasip-research to map this topic broadly, verify the important claims with sources, and decide whether external Deep Research is needed."
+policy:
+  allow_implicit_invocation: true

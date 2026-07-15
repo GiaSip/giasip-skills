@@ -1,8 +1,8 @@
 {
   "name": "giasip-skills",
   "displayName": "GiaSip Skills",
-  "description": "GiaSip's personal Claude Code skills for research & multi-model dispatch.",
-  "version": "1.2.0",
+  "description": "GiaSip skills for evidence-gated research orchestration and multi-model dispatch.",
+  "version": "1.3.0",
   "owner": {
     "name": "GiaSip",
     "url": "https://github.com/GiaSip"
@@ -12,8 +12,8 @@
   "plugins": [
     {
       "name": "giasip-skills",
-      "description": "Research orchestration & multi-model dispatch skills.",
-      "version": "1.2.0",
+      "description": "Evidence-gated research orchestration & multi-model dispatch skills.",
+      "version": "1.3.0",
       "source": "./"
     }
   ]

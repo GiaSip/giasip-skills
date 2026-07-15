@@ -1,6 +1,6 @@
 # Deep Research 平台能力档案
 
-> 供 `/research` Skill 查询各 Deep Research 平台能力档案。
+> 供 GiaSip Research（Claude Code 中为 `/giasip-research`，Codex 中为 `$giasip-research`）查询各 Deep Research 平台能力档案。
 >
 > **匹配原则：选最强能力，不选最低成本。**
 

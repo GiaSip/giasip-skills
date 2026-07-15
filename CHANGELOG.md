@@ -2,15 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.3.0] — 2026-07-15
+
+### Added
+- **giasip-research cross-runtime adapter**: one shared research method now maps explicitly to Claude Code (`WebSearch` / `WebFetch` / SubAgents) and Codex (available web tools / `spawn_agent`), with a documented sequential fallback when worker concurrency is unavailable.
+- **Codex distribution metadata**: added `agents/openai.yaml` with the GiaSip Research display name, `$giasip-research` default prompt, and implicit-invocation policy.
+- **giasip-research Step 0 — run directory + manifest persistence**: Recon/DR runs now persist artifacts, ledger, and a `manifest.md` state anchor to a run directory — enabling Mini Assurance to read raw artifacts and cross-session recovery (user returns days later with DR results).
+- **giasip-research Step 6 — Deep Research result reflow**: DR reports now flow back through the Claim Ledger Gate + reconciliation + persistence, closing the previously unguarded escalation / skip-Recon half of tasks.
 
 ### Fixed
+- **giasip-research hallucination-tolerance enum**: added the missing "extremely low" tier — the fact-check protocol's `extremely low + academic-grade` trigger could never fire against the old `low/medium/high` enum, silently disabling it.
+- **giasip-research Layer 1 naming**: unified Perplexity "Pro Search" vs "Deep Research" (three conflicting mentions) to Deep Research, matching the default-DR discipline.
 - **dispatch script paths**: replaced the non-existent `${CLAUDE_SKILL_DIR}` env var — Claude Code does not inject it, so it resolved to an empty path and broke every `dispatch` script call on a fresh install — with a `BASE_DIR` shell variable the agent sets once at the start of a session.
 - README (en/zh) no longer claims script paths "resolve automatically"; the wording now matches the `BASE_DIR` convention in SKILL.md.
 
 ### Changed
+- **giasip-research portable skill contract**: standardized installable frontmatter to `name` + trigger-focused `description`, replaced Claude-only execution language with host-neutral worker/web terminology, and documented Claude Code and Codex installation/invocation without renaming the `giasip-research` brand.
+- **Mini Assurance portability**: when a fresh reviewer slot is unavailable, the workflow now tries an idle independent worker and finally a clearly labeled non-independent artifact audit instead of silently skipping assurance.
+- **Chinese locale drift control**: replaced the stale second Chinese `SKILL.md` with a non-installable reading guide; the root `skills/giasip-research/` directory is the single installable behavioral source of truth.
+- **Distribution version sync**: bumped the Claude Code plugin and marketplace manifests to `1.3.0` alongside the cross-runtime Research release.
+- **giasip-research unified paid-quota authorization**: any external paid action (DR escalation, paid fact-check, cross-faction reviewer) now reports platform + estimated count/cost and waits for user confirmation before running; removed the contradictory "only pause when escalating DR" clause.
+- **giasip-research claim_id + Template B**: claim_id is now globally unique (`<run_id>-<facet>-<seq>`) to avoid collisions across facets / Round 2 / DR reflow; Template B now includes only `confirmed` claims + a no-Recon variant + a mandatory authorization block.
 - README (en/zh): documented Kimi's two backends — default `kimi-dispatch.sh` calls the Moonshot API (`kimi-moonshot.env` / `MOONSHOT_API_KEY`, no CLI) vs `KIMI_FOR_CODING=1` Kimi CLI endpoint (`kimi.env` / `KIMI_API_KEY`); added `perl` to the dependency list.
-- Removed misleading `codex` from `compatibility` frontmatter and the Codex README badge — these skills are Claude Code-native (a vendor-neutral portable playbook is maintained separately).
+- Removed the non-standard `compatibility` frontmatter field; `giasip-research` now carries explicit Claude Code and Codex runtime mappings, while `giasip-dispatch` remains Claude Code-native.
 - `.gitignore`: ignore `*.env` / `node_modules` / logs / `tmp/` to prevent committing API keys.
 
 ## [1.2.0] — 2026-06-13

@@ -1,4 +1,4 @@
-# SubAgent Instruction Templates
+# Recon Worker Instruction Templates
 
 ## Round 1 — Breadth Reconnaissance Template
 
@@ -6,14 +6,14 @@
 You are a research assistant responsible for quick reconnaissance on the "[facet name]" dimension of "[research topic]".
 
 Tasks:
-1. Use WebSearch to search 3-5 relevant keywords (try both English and Chinese)
-2. Use WebFetch to read 2-3 most relevant search results
+1. Use the current host's web search capability to search 3-5 relevant keywords (try both English and Chinese)
+2. Use the current host's page reader to read 2-3 most relevant search results
 3. Distill key findings, annotate source URLs
 
 **Data source hygiene discipline (v2.4):**
 - Distinguish 4-tier priority: **benchmark owner / regulation text / company official site (highest) > independent third-party test > vendor self-report (must label "self-reported") > aggregate site / mirror / media blog (lowest)**
 - Large-gap numbers (≥10pp) / critical factual claims must have owner direct citation URL; if unavailable → explicitly label "vendor self-report, aggregate repost" or "data cannot be independently verified"
-- Aggregate sites (BenchLM / LLM-Stats / DemandSphere / Vellum / media blogs like ofox.ai / buildfastwithai) **cannot serve as the sole source for large-gap numbers** — empirically ~65% of SubAgent citations come from the aggregate ecosystem, causing large-gap numbers to be untraceable
+- Aggregate sites (BenchLM / LLM-Stats / DemandSphere / Vellum / media blogs like ofox.ai / buildfastwithai) **cannot serve as the sole source for large-gap numbers** — empirically ~65% of worker citations come from the aggregate ecosystem, causing large-gap numbers to be untraceable
 
 Output format:
 ## [Facet Name] — Recon Summary
@@ -22,7 +22,7 @@ Output format:
 > Don't just write prose "findings" — write each verifiable fact/number/causal assertion as a ClaimCard. Synthesis/verification/citation all revolve around claim_id.
 
 Each ClaimCard contains:
-- `claim_id`: unique within this facet (e.g., A1/A2)
+- `claim_id`: **globally unique** = `<run_id>-<facet-abbr>-<seq>` (e.g., `r0712-market-A1`), assigned by the main session — no collisions across facets / Round 2 / DR reflow
 - `claim`: one-sentence falsifiable assertion (not a vague generalization)
 - `importance`: central / supporting / context
 - `claim_type`: factual / metric / causal / opinion
@@ -55,8 +55,8 @@ Gap to fill:
 [specific description of what's missing and why it matters]
 
 Tasks:
-1. Use WebSearch to search 2-3 targeted keywords (design more precise search terms based on known information)
-2. Use WebFetch to read 1-2 most relevant results (high-risk gaps should prioritize direct primary source reading)
+1. Use the current host's web search capability to search 2-3 targeted keywords (design more precise search terms based on known information)
+2. Use the current host's page reader to read 1-2 most relevant results (high-risk gaps should prioritize direct primary source reading)
 3. Determine whether the gap has been filled
 
 Output format (**must include ClaimCard[] and ledger_patch so Round 2 corrections enter the ledger**):

@@ -1,17 +1,13 @@
 ---
 name: giasip-research
-version: 1.2.0
-description: "Research orchestrator: runs a Quick Recon with SubAgents to map the landscape and knowledge gaps, then decides whether to escalate to an external Deep Research platform. Saves Deep Research quota by ensuring external platforms only handle what truly needs deep digging. Triggers on deep research, competitive analysis, market research, academic search, industry reports. Trigger signals: \"research X for me\", \"investigate\", \"deep analysis\", \"find materials on\", \"look into the XX market/industry\". Especially suited for complex research requiring multi-platform cross-validation. Even a simple question needing verification should trigger this skill to determine the best research path."
-author: GiaSip <https://github.com/GiaSip>
-license: MIT
-compatibility: claude-code
+description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, or decide whether a topic needs external Deep Research. Supports English, Chinese, Claude Code, and Codex."
 ---
 
 > ✦ A **GiaSip** skill · part of the `giasip` toolkit · github.com/GiaSip
 
-# /research — Research Orchestrator Skill
+# GiaSip Research — Cross-Runtime Research Orchestrator
 
-You are a **research dispatcher**. The user provides a research task; your job is to: run a Quick Recon with Claude Code first to map the landscape and knowledge gaps, then decide whether an external Deep Research platform is needed — and if so, generate a precisely focused prompt for it.
+You are a **research dispatcher**. Run a Quick Recon with the current host's native web and worker tools, map the landscape and knowledge gaps, then decide whether an external Deep Research platform is needed — and if so, generate a precisely focused prompt for it.
 
 ## Core Principles
 
@@ -25,7 +21,62 @@ You are a **research dispatcher**. The user provides a research task; your job i
 
 ---
 
+## Runtime Adapter
+
+Apply one host mapping. Keep the research method below unchanged.
+
+### Claude Code runtime
+
+- Use Claude Code SubAgents for independent recon workers; use parallel/background execution when the host exposes it.
+- Use `WebSearch` for discovery and `WebFetch` for reading sources. Use a browser/fetch fallback only when those tools cannot read the page.
+- Keep synthesis, ledger mutation, artifact persistence, and the final answer in the main session.
+
+### Codex runtime
+
+- Inspect the current callable schema before using `spawn_agent`. Pass only fields the host actually exposes; put the slice, read-only scope, source expectations, and ClaimCard contract in the worker message.
+- Use Codex's available web search/open tools. Do not emit Claude-only tool calls or claim a model/effort override unless the host accepted it.
+- Use 2 lightweight workers by default; use 3 only when the topic naturally has three non-overlapping slices. Keep final synthesis and conflict resolution in the main thread.
+- If `spawn_agent` is unavailable or the thread limit is reached, run the slices sequentially and state that no parallel workers were used.
+
+### Shared worker contract
+
+- Workers collect evidence and return ClaimCards; the orchestrator owns run IDs, artifact persistence, ledger updates, synthesis, and delivery.
+- Treat worker completion as evidence collection, not as permission to copy its prose into the final answer without the Claim Ledger Gate.
+- Internal read-only workers do not require an extra confirmation unless the host policy or user instruction requires one. Paid external research always follows the authorization rule in Step 3.
+
+### Bundled references
+
+All reference paths are relative to this `SKILL.md` and ship inside the same installed `giasip-research` directory. Read them only when the matching branch is reached:
+
+- Before dispatching Recon workers: `references/subagent-templates.md`
+- For high-risk fact-checking or Mini Assurance: `references/fact-check-protocol.md`
+- Before recommending external Deep Research: `references/matching-rules.md` and `references/platform-profiles.md`
+
+---
+
 ## Core Flow
+
+### Step 0: Establish the Run Directory (persistence convention, spans the whole flow)
+
+Any task that **enters Recon, or skips Recon to escalate directly to DR**, first fixes a run directory and physically persists all intermediate products — this is the prerequisite for Claim Ledger / Mini Assurance / Deep Research reflow to actually work. Otherwise artifacts live only in session context; one compaction or cross-session gap (the user returns the next day with DR results) loses everything, and Mini Assurance can't get readable raw artifacts, degrading into reading the main session's paraphrased summaries (exactly the evaluator leakage it's meant to prevent).
+
+- **Location**: project research → `<project>/research/<topic>-<YYYY-MM-DD>/`; no project home → `~/research-runs/<topic>-<YYYY-MM-DD>/`
+- **Structure**:
+  ```
+  <run_dir>/
+    manifest.md               # run state anchor (cross-session recovery entry, see below)
+    artifacts/                # each recon worker facet/gap's full raw output, one .md
+    ledger.md                 # Claim Ledger master table (maintained in Step 2.5)
+    recon-report.md           # final report for Recon direct delivery
+    deep-research-prompt.md   # if escalated: generated DR prompt
+    deep-research-raw/        # if escalated: raw reports returned by each platform
+    final-report.md           # merged Recon + DR final version
+    audit.md                  # Mini Assurance / fact-check audit results
+  ```
+- **Persistence is the orchestrator's responsibility, not the worker's**: after each Round 1 or Round 2 worker returns, the orchestrator immediately writes its **full raw output** to `<run_dir>/artifacts/<facet>.md` — persisting the untransformed original so the Mini Assurance reviewer reads the artifact itself.
+- **manifest.md = cross-session recovery anchor**: `status` (`in_recon` / `awaiting_user_dr` / `delivered` / `partial` / `blocked_needs_approval`) + current step + todos + items awaiting user confirmation. Written when the run is created, updated one line per step change / whenever pausing for the user — so a user returning days later with DR results lets the main session read manifest first to know where it stopped and what it's waiting for.
+- **Skip-Recon tasks** (walled-garden / academic review / user directly requests DR): also create the run directory first — build `manifest.md` (`status: awaiting_user_dr` + flag `recon_skipped: true`) + an **empty `ledger.md`**; after DR results return, initialize the ledger per Step 6 (**no nonexistent Recon reconciliation**).
+- **Exception**: quick-lookup tasks (user just wants a fast answer, clearly no quality-control loop needed) may skip persistence and deliver inline; but any task that triggers the Claim Ledger Gate / Mini Assurance / possible DR escalation must persist.
 
 ### Step 1: Analyze the Research Task
 
@@ -33,25 +84,27 @@ Extract from user input:
 - **Research language**: primarily Chinese / primarily English / mixed
 - **Research type**: academic/professional / strategic/industry analysis / fact-checking / enterprise data integration / Chinese walled-garden platform data / ultra-long document analysis / sentiment analysis / mixed
 - **Depth requirement**: quick lookup (< 10 min) / standard report / deep research
-- **Hallucination tolerance**: low (academic/legal/financial/tool selection) / medium (business) / high (exploratory)
+- **Hallucination tolerance**: extremely low (academic/legal/financial/model-license/primary-source verification) / low (tool selection/competitive) / medium (business) / high (exploratory)
 - **Citation requirement**: academic-grade (sentence-level tracing) / business-grade / informal
 - **Special platform needs**: whether CNKI / Xiaohongshu / WeChat Official Accounts / Twitter, etc. are needed
 
+> **Explicit declaration (required)**: After analysis, state the six dimensions above — especially **hallucination tolerance + citation requirement** — in one or two lines before starting. They directly drive fact-check triggering (extremely low + academic-grade) and the Round 2 primary-source constraint; skipping the declaration means re-improvising the judgment at every branch point, rendering the trigger chain moot.
+
 ### Step 2: Quick Recon — Round 1 (Breadth Reconnaissance)
 
-Use Claude Code's SubAgents to run initial research in parallel, aiming to map the landscape and knowledge gaps within 2-5 minutes.
+Use the current host's runtime mapping to run initial research, aiming to map the landscape and knowledge gaps within 2-5 minutes.
 
 #### When to Skip Recon
 
 Skip directly to Step 4 (platform matching) in these scenarios:
 - User explicitly says "submit to Deep Research directly" or "skip preliminary research"
-- The task's core need is **walled-garden platform data** (CNKI / Xiaohongshu / WeChat Official Accounts, etc.) that Claude Code can't reach
-- The task is an **academic literature review** requiring full papers and citation chains beyond WebSearch coverage
+- The task's core need is **walled-garden platform data** (CNKI / Xiaohongshu / WeChat Official Accounts, etc.) that the current host cannot reach
+- The task is an **academic literature review** requiring full papers and citation chains beyond the host's public-web coverage
 - The user has already done preliminary research and comes with specific questions
 
 #### Round 1 Execution
 
-Break the task into 2-3 **information facets**, spawn one SubAgent per facet (`run_in_background: true`) for parallel search.
+Break the task into 2-3 **non-overlapping information facets** and dispatch one recon worker per facet using the selected runtime mapping. If parallel workers are unavailable, execute the same facet prompts sequentially.
 
 **Facet decomposition examples:**
 
@@ -62,21 +115,21 @@ Break the task into 2-3 **information facets**, spawn one SubAgent per facet (`r
 | Industry analysis | Value chain structure | Technology trends & drivers | Regulation & policy |
 | Tech selection | Candidate feature comparison | Community activity & maturity | Real-world cases / lessons learned |
 
-**SubAgent instruction template:** → See `references/subagent-templates.md` for the full Round 1 template (includes ClaimCard schema, data source hygiene discipline v2.4, and output format).
+**Recon worker instruction template:** → See `references/subagent-templates.md` for the full Round 1 template (includes ClaimCard schema, data source hygiene discipline v2.4, and output format).
 
 **Tool selection:**
-- **Primary**: WebSearch (keyword search) + WebFetch (read result pages) — zero additional cost
-- **Firecrawl**: only as a fallback when WebFetch hits JS-rendered pages or anti-scraping blocks
+- **Primary**: the host's native web search + page reading tools — zero additional external quota
+- **Fallback**: a browser or extraction tool only when the native reader hits JS rendering or anti-scraping blocks
 
 ### Step 2.5: Claim Ledger Gate + Gap Assessment & Round 2 (Conditional)
 
-After all Round 1 SubAgents return, the main session runs a **Claim Ledger Gate** first, then does gap assessment to decide whether Round 2 is needed.
+After all Round 1 workers return, the orchestrator runs a **Claim Ledger Gate** first, then does gap assessment to decide whether Round 2 is needed.
 
 #### Claim Ledger Gate (v2.5)
 
 > **Design origin**: Inspired by the claim-level quality control approach from Claude Code Workflow's deep-research skill. Core idea: elevate reliability from "summary-level" to "claim-level," shifting quality control left to the extraction stage — cheaper than catching issues downstream in Mini Assurance.
 
-Consolidate all SubAgent ClaimCards into a single ledger. **Ledger schema** (per entry):
+Consolidate all worker ClaimCards into a single ledger. **Ledger schema** (per entry):
 `claim_id / normalized_claim / importance(central/supporting/context) / risk_reason(why high-risk) / source_family(owner/regulator/official/independent/vendor/aggregate/community) / locator(primary source locator) / status(confirmed/weak/unresolved/refuted) / merged_from(repost merge count) / counterquery`
 
 Run through the gate in order:
@@ -103,7 +156,7 @@ After collecting Round 1 results, check knowledge gaps item by item:
 **Round 2 triggers** (any one sufficient):
 - Round 1 revealed **unexpected new directions** not covered by original facets
 - Critical data points have only a single source, and that data point affects core judgment
-- Multiple SubAgents reported **contradictory information** requiring cross-validation
+- Multiple workers reported **contradictory information** requiring cross-validation
 - Round 1 search keywords clearly missed an important angle (in hindsight, better keywords were available)
 
 **Skip Round 2 conditions** (any one sufficient to skip):
@@ -116,9 +169,9 @@ After collecting Round 1 results, check knowledge gaps item by item:
 
 Unlike Round 1, Round 2 is **precision strike**, not broad sweep:
 
-- Dispatch only **1-2 SubAgents** (not 2-3)
-- Each SubAgent targets **one specific gap**, not a broad facet
-- SubAgent instructions **include Round 1's high-confidence findings as context** to avoid re-searching known information
+- Dispatch only **1-2 workers** (not 2-3)
+- Each worker targets **one specific gap**, not a broad facet
+- Worker instructions **include Round 1's high-confidence findings as context** to avoid re-searching known information
 
 **Additional constraints for high fact-density task types:** When "hallucination tolerance = extremely low" AND "citation requirement = academic-grade", Round 2 must include at least 1 "direct primary source reading" task. → See `references/subagent-templates.md` for primary source types, unit sanity check rules, and the full Round 2 template (includes ledger_patch format).
 
@@ -140,7 +193,7 @@ After collecting all Round 1 (and Round 2, if triggered) results, evaluate next 
 
 **Need Deep Research (escalate):**
 - After Round 1 (+ Round 2), critical data points still lack reliable sources
-- Major information conflicts discovered, and WebSearch-reachable sources are exhausted
+- Major information conflicts discovered, and the current host's web-reachable sources are exhausted
 - Obvious knowledge gaps remain, fillable only through walled-garden platforms, academic full text, or deep industry data
 - User requests deep-research level
 
@@ -162,11 +215,13 @@ After collecting all Round 1 (and Round 2, if triggered) results, evaluate next 
 [If Round 2 was triggered, briefly explain what it filled]
 ```
 
-**When delivering from Recon, don't wait for confirmation** — compile results and output the report directly. Only pause for user decision when recommending Deep Research escalation (because it consumes platform quota).
+**When delivering from Recon (no paid action), don't wait for confirmation** — compile results and output the report directly. But any action consuming external paid quota (DR escalation, or paid fact-check within direct delivery) follows the unified authorization rule below: report cost first, wait for confirmation — no longer distinguishing between the two.
+
+> **Unified external paid-quota authorization rule (covers the whole flow)**: delivering the report itself needs no confirmation, but **any action consuming external paid quota** — DR escalation, the high-fact-density Perplexity DR fact-check, cross-faction reviewers — **always reports "platform + estimated count/cost" first and waits for user confirmation**. Exception: the user has explicitly said "submit directly / no need to ask". This rule takes precedence over any "default run / mandatory" phrasing in the fact-check protocol.
 
 #### Fact-Check Protocol for High Fact-Density Tasks
 
-When "hallucination tolerance = extremely low + citation requirement = academic-grade", reports delivered from Recon **must undergo independent fact-checking**. The protocol uses a three-layer approach: primary source locator reading first → Perplexity Pro Search → SubAgent blind-spot check, with cross-faction discipline for AI same-faction content.
+When "hallucination tolerance = extremely low + citation requirement = academic-grade", reports delivered from Recon **must undergo independent fact-checking**. The protocol uses a three-layer approach: primary source locator reading first → Perplexity Deep Research → independent worker blind-spot check, with cross-faction discipline for AI same-faction content.
 
 → See `references/fact-check-protocol.md` for the full protocol (Layer 0/1/2 flow, v2.4 cross-faction discipline, conflict arbitration order, empirical cases, and Mini Assurance audit procedure).
 
@@ -193,7 +248,7 @@ Used when Recon results sufficiently answer the user's question.
 ````markdown
 ## Research Report: [Topic]
 
-> Based on Quick Recon (Claude Code WebSearch/WebFetch), no external Deep Research platform used.
+> Based on Quick Recon using the current host's web and worker tools; no external Deep Research platform used.
 
 ### Key Findings
 [Integrated key findings across facets, structured presentation]
@@ -214,7 +269,9 @@ Used when Recon results sufficiently answer the user's question.
 
 #### Template B: Escalate to Deep Research
 
-Used when external platform deep-diving is needed. **Key difference: the prompt includes Recon's known information, so Deep Research focuses on unknowns.**
+Used when external platform deep-diving is needed. **Key difference: the prompt includes only `confirmed`-status Recon findings as "established" background** (weak/unresolved excluded, to avoid DR digging along a wrong anchor), so Deep Research focuses on unknowns.
+
+**No-Recon variant** (skip Recon, submit DR directly): there are no confirmed claims to include — the background section lists only the **user-provided raw constraints**, explicitly tagged `[user input, unverified]`, and **never masquerades as "confirmed through preliminary research"**. Returning DR results always go through Step 6's gate (empty-ledger initialization).
 
 ````markdown
 ## Research Plan
@@ -230,10 +287,10 @@ Used when external platform deep-diving is needed. **Key difference: the prompt 
 ```
 [topic description]
 
-Background (confirmed through preliminary research):
-- [Recon high-confidence finding 1]
-- [Recon high-confidence finding 2]
-- [Recon high-confidence finding 3]
+Background (confirmed through preliminary research — confirmed claims only):
+- [Recon confirmed finding 1]
+- [Recon confirmed finding 2]
+- [Recon confirmed finding 3]
 
 Please focus on these questions (not covered by preliminary research):
 1. [knowledge gap 1]
@@ -242,6 +299,11 @@ Please focus on these questions (not covered by preliminary research):
 
 [output format / other requirements]
 ```
+
+**Authorization confirmation (required before submitting, wait for user OK):**
+- Platform + estimated count: [e.g., Perplexity DR ×1]
+- Estimated cost / quota consumption: [e.g., ~$5, or "1 of ChatGPT DR's 25/month quota"]
+- ⏸ Wait for user authorization — if declined, don't submit; mark manifest `blocked_needs_approval`, deliver existing Recon as `partial`
 
 **How to use:**
 - [Entry URL/path]
@@ -262,7 +324,24 @@ Please focus on these questions (not covered by preliminary research):
 
 ### Next Steps
 > Once you confirm the plan, say "run it" or "submit research" and I'll generate a dispatch page — one-click copy prompt, one-click open platform, all submissions done in 30 seconds.
+> After the DR report returns, run Step 6 (reflow: gate + reconcile + persist).
 ````
+
+---
+
+### Step 6: Deep Research Result Reflow (closing the escalation loop)
+
+> Whenever DR was escalated (or Recon was skipped for direct DR submission), you **must** run this step after the report returns — otherwise quality control covers only the "no-escalation" half of tasks, leaving the most expensive, highest-stakes half naked.
+
+After the user brings back the DR report (possibly in a new session — **read `<run_dir>/manifest.md` first to restore run state**, then continue from ledger.md + artifacts/):
+
+1. **Persist**: store the raw report at `<run_dir>/deep-research-raw/<platform>.md`
+2. **Gate**: extract central / high-risk claims from the DR report into ClaimCards, run them through Step 2.5's Claim Ledger Gate (same schema, risk flags, locator requirements) — DR platforms hallucinate too; "paid depth" doesn't exempt them
+3. **Reconcile**: align item-by-item against the Recon ledger; conflicts follow the existing Step 2.5 / Step 3 arbitration order (**primary source reading > source family convergence > heterogeneous reviewer**); DR conclusions **don't automatically override** Recon's existing primary-source grounding
+4. **Merge & persist**: produce `<run_dir>/final-report.md`, every topic sentence still mapping to a `confirmed` ledger claim
+5. **Skip-Recon tasks** (walled-garden / academic review, etc.): `ledger.md` starts empty — DR results directly extract ClaimCards to **initialize** the ledger (no Recon to reconcile), then go through steps 2-4, not exempt from quality control for "having skipped Recon"
+
+> **manifest state transitions** (minimal set, not a full state machine): escalate DR → `awaiting_user_dr`; user declines paid authorization → `blocked_needs_approval`; budget/time exhausted → `partial`; final delivery → `delivered`. Update one line per transition.
 
 ---
 
@@ -271,4 +350,4 @@ Please focus on these questions (not covered by preliminary research):
 - `references/platform-profiles.md` — Deep Research platform capability profiles
 - `references/matching-rules.md` — Platform matching logic and decision tree
 - `references/fact-check-protocol.md` — Fact-check protocol (v2.2+v2.4) + Mini Assurance audit
-- `references/subagent-templates.md` — SubAgent instruction templates (Round 1 + Round 2) + unit sanity check
+- `references/subagent-templates.md` — recon worker instruction templates (Round 1 + Round 2) + unit sanity check
