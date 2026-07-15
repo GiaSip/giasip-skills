@@ -2,7 +2,7 @@
 
 > ✦ GiaSip 的跨运行时 Agent 技能集 · github.com/GiaSip
 >
-> *`giasip-research` 共用一套调研方法，内置 Claude Code 和 Codex 两层薄适配；`giasip-dispatch` 仍是 Claude Code 原生技能。*
+> *`giasip-research` 共用一套调研方法，内置 Claude Code 和 Codex 两层薄适配；既可独立安装，也可通过 `giasip` Codex Plugin 获得 namespace。`giasip-dispatch` 仍是 Claude Code 原生技能。*
 
 | 技能 | 说明 |
 |------|------|
@@ -10,6 +10,8 @@
 | **giasip-dispatch** | 多模型调用器 — 把任务或 prompt 一键派发给其他 AI 模型（Codex / Gemini / Kimi / DeepSeek / 豆包 / Qwen / GLM / MiniMax）执行并取回结果。纯调用器形态，不内置选型偏好（选哪个模型、单派多派交给你自己的 Claude 临场判断）。 |
 
 ## 安装
+
+Codex 有两种分发方式，通常二选一即可。
 
 ### 方式一：`npx skills add`（推荐）
 
@@ -27,14 +29,23 @@ npx skills add GiaSip/giasip-skills --global --skill giasip-research --agent cod
 npx skills add GiaSip/giasip-skills -l
 ```
 
-### 方式二：作为 Claude Code plugin（仅 Claude Code）
+### 方式二：Codex Plugin（带 GiaSip namespace）
+
+```bash
+codex plugin marketplace add GiaSip/giasip-skills
+codex plugin add giasip@giasip-skills
+```
+
+Plugin 中用 `$giasip:research`。它只打包已经 Codex 化的 Research，不会把仍属 Claude Code 原生的 `giasip-dispatch` 一起安装。架构与同步方法见 [`docs/CODEX-PLUGIN.md`](../../docs/CODEX-PLUGIN.md)。
+
+### 方式三：作为 Claude Code plugin（仅 Claude Code）
 
 ```
 /plugin marketplace add GiaSip/giasip-skills
 /plugin install giasip-skills@giasip-skills
 ```
 
-### 方式三：git clone
+### 方式四：git clone
 
 ```bash
 git clone https://github.com/GiaSip/giasip-skills

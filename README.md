@@ -1,48 +1,41 @@
 # giasip-skills
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Version](https://img.shields.io/badge/version-1.4.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Claude Code](https://img.shields.io/badge/claude--code-compatible-orange)
 ![Codex](https://img.shields.io/badge/codex-compatible-black)
 
 > Cross-runtime agent skills by GiaSip &middot; github.com/GiaSip
 >
-> *`giasip-research` uses one shared research method with thin Claude Code and Codex runtime mappings. `giasip-dispatch` remains Claude Code-native.*
+> *`giasip-research` uses one shared research method with thin Claude Code and Codex runtime mappings. It is available as a standalone skill or as the namespaced `giasip` Codex Plugin. `giasip-dispatch` remains Claude Code-native.*
 
 | Skill | Description |
 |-------|-------------|
 | **giasip-research** | Cross-runtime research orchestrator — runs a breadth-first Quick Recon with native workers and web tools, then decides whether to escalate to an external Deep Research platform. Built-in two-round Recon, Claim Ledger quality gate, persistence, and independent fact-check protocol keep the workflow evidence-grounded. |
 | **giasip-dispatch** | Multi-model dispatcher — sends a task or prompt to other AI models (Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax) and retrieves results. Includes complexity routing guidelines to help pick the right dispatch strategy (API vs CLI vs SubAgent, single vs multi), but the final model choice is left to your Claude's judgment. |
 
-## Skill Structure
+## Distribution Structure
 
 ```
-skills/
-├── giasip-research/
-│   ├── SKILL.md                          # Shared method + Claude/Codex runtime mappings
-│   ├── agents/openai.yaml                # Codex display, prompt, and invocation metadata
-│   └── references/
-│       ├── platform-profiles.md          # Deep Research platform capability cards
-│       ├── matching-rules.md             # Platform matching decision tree
-│       ├── fact-check-protocol.md        # Fact-check protocol (v2.2+v2.4) + Mini Assurance
-│       └── subagent-templates.md         # SubAgent instruction templates + unit sanity check
-│
-└── giasip-dispatch/
-    ├── SKILL.md                          # Core skill definition
-    ├── scripts/
-    │   ├── api-dispatch.sh               # API direct call (DeepSeek/Qwen/GLM/Doubao/MiniMax)
-    │   ├── codex-appserver.mjs           # Codex App Server protocol (no cold start)
-    │   ├── gemini-supervisor.sh          # Gemini CLI + retry/fallback/circuit breaker
-    │   ├── kimi-dispatch.sh              # Kimi dispatch + thinking mode control
-    │   ├── dispatch-persist.mjs          # Response logging sink
-    │   └── stop-review-gate.mjs          # Codex stop-hook for code review gating
-    └── references/
-        └── model-roster.md              # Full model roster + multi-dispatch lineup guide
+skills/giasip-research/                   # Canonical shared Research skill
+├── SKILL.md
+├── agents/openai.yaml                    # Standalone Codex metadata
+└── references/
+
+plugins/giasip/                           # Codex Plugin package
+├── .codex-plugin/plugin.json
+└── skills/research/                       # Generated namespaced copy
+
+.agents/plugins/marketplace.json          # Repo marketplace for Codex
+scripts/sync_codex_plugin.py              # Canonical skill → plugin bundle sync/check
+skills/giasip-dispatch/                   # Claude Code-native dispatcher
 ```
 
 ## Installation
 
-### Option 1: `npx skills add` (recommended)
+Choose one Codex distribution mode. Installing both is supported, but normally unnecessary.
+
+### Option 1: Standalone skill with `npx skills add`
 
 ```bash
 # Claude Code: install all skills globally
@@ -58,14 +51,27 @@ npx skills add GiaSip/giasip-skills --global --skill giasip-research --agent cod
 npx skills add GiaSip/giasip-skills -l
 ```
 
-### Option 2: Claude Code plugin (Claude Code only)
+Standalone invocation: `/giasip-research` in Claude Code or `$giasip-research` in Codex.
+
+### Option 2: Codex Plugin with the GiaSip namespace
+
+```bash
+codex plugin marketplace add GiaSip/giasip-skills
+codex plugin add giasip@giasip-skills
+```
+
+Plugin invocation: `$giasip:research`.
+
+The Codex Plugin intentionally bundles Research only. `giasip-dispatch` is not bundled because it remains Claude Code-native. See [Codex Plugin architecture and maintenance](docs/CODEX-PLUGIN.md).
+
+### Option 3: Claude Code plugin (Claude Code only)
 
 ```
 /plugin marketplace add GiaSip/giasip-skills
 /plugin install giasip-skills@giasip-skills
 ```
 
-### Option 3: git clone and copy
+### Option 4: git clone and copy
 
 ```bash
 git clone https://github.com/GiaSip/giasip-skills
@@ -77,7 +83,7 @@ cp -R giasip-skills/skills/giasip-dispatch ~/.claude/skills/giasip-dispatch
 cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 ```
 
-> Invoke Research as `/giasip-research` in Claude Code or `$giasip-research` in Codex. Both hosts may also discover it from a natural-language research request. `giasip-dispatch` remains Claude Code-native and uses `/giasip-dispatch`.
+> Both standalone and Plugin installs use the same Research behavior. The namespace changes only the invocation surface: `$giasip-research` standalone, `$giasip:research` through the Codex Plugin. Claude Code continues to use `/giasip-research`; `giasip-dispatch` remains `/giasip-dispatch` in Claude Code only.
 
 ---
 
@@ -90,11 +96,16 @@ cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 
    # Codex
    npx skills add GiaSip/giasip-skills --global --skill giasip-research --agent codex --yes
+
+   # Or install the namespaced Codex Plugin
+   codex plugin marketplace add GiaSip/giasip-skills
+   codex plugin add giasip@giasip-skills
    ```
 
 2. **Try it**:
    - Claude Code: `/giasip-research Research the current state of humanoid robot regulations`
    - Codex: `$giasip-research Research the current state of humanoid robot regulations`
+   - Codex Plugin: `$giasip:research Research the current state of humanoid robot regulations`
    - Or simply describe the research task in either host.
 
 ---
@@ -152,6 +163,10 @@ Dependency check: `command -v codex gemini kimi node curl python3 jq perl`
 | `skills/giasip-research/references/fact-check-protocol.md` | Independent fact-check protocol with cross-faction discipline |
 | `skills/giasip-research/agents/openai.yaml` | Codex UI metadata, default `$giasip-research` prompt, and implicit invocation policy |
 | `skills/giasip-research/references/subagent-templates.md` | Cross-runtime recon worker templates with ClaimCard schema |
+| `plugins/giasip/.codex-plugin/plugin.json` | Codex Plugin manifest and `giasip` component namespace |
+| `.agents/plugins/marketplace.json` | Git/repo marketplace entry used by `codex plugin marketplace add` |
+| `scripts/sync_codex_plugin.py` | Builds or checks the generated `$giasip:research` bundle from the canonical skill |
+| `docs/CODEX-PLUGIN.md` | Plugin architecture, installation, update, and validation guide |
 | `skills/giasip-dispatch/references/model-roster.md` | Model roster with per-model strengths and multi-dispatch lineups |
 | `skills/giasip-dispatch/scripts/dispatch-persist.mjs` | Persists dispatch responses to `~/.cache/dispatch/` (call explicitly or hook into dispatch scripts) |
 | `skills/giasip-dispatch/scripts/stop-review-gate.mjs` | Claude Code stop hook — advisory Codex code review gate |

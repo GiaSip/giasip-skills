@@ -1,5 +1,5 @@
 ---
-name: giasip-research
+name: research
 description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, or decide whether a topic needs external Deep Research. Supports English, Chinese, Claude Code, and Codex."
 ---
 

@@ -2,7 +2,7 @@
   "name": "giasip-skills",
   "displayName": "GiaSip Skills",
   "description": "GiaSip skills for evidence-gated research orchestration and multi-model dispatch.",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "owner": {
     "name": "GiaSip",
     "url": "https://github.com/GiaSip"
@@ -13,7 +13,7 @@
     {
       "name": "giasip-skills",
       "description": "Evidence-gated research orchestration & multi-model dispatch skills.",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "source": "./"
     }
   ]

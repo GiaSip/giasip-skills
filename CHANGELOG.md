@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] — 2026-07-15
+
+### Added
+- **GiaSip Codex Plugin**: added a validated `.codex-plugin/plugin.json` package with the `giasip` namespace and `$giasip:research` invocation.
+- **Repo marketplace**: added `.agents/plugins/marketplace.json` so Codex can install the Plugin from `GiaSip/giasip-skills`.
+- **Generated-bundle sync guard**: added `scripts/sync_codex_plugin.py` and regression coverage to keep the Plugin copy derived from the canonical `giasip-research` skill.
+- **Codex Plugin guide**: documented standalone versus Plugin installation, namespacing, maintenance, and validation in `docs/CODEX-PLUGIN.md`.
+
+### Changed
+- README (English/Chinese) now distinguishes standalone `$giasip-research` from Plugin `$giasip:research` installation.
+- Distribution manifests are versioned at `1.4.0`.
+- The Codex Plugin intentionally excludes `giasip-dispatch` until that Claude Code-native workflow receives its own Codex adaptation.
+
 ## [1.3.0] — 2026-07-15
 
 ### Added

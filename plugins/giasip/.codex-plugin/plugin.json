@@ -1,0 +1,37 @@
+{
+  "name": "giasip",
+  "version": "1.4.0",
+  "description": "Evidence-gated GiaSip Research workflow for Codex.",
+  "author": {
+    "name": "GiaSip",
+    "url": "https://github.com/GiaSip"
+  },
+  "homepage": "https://github.com/GiaSip/giasip-skills",
+  "repository": "https://github.com/GiaSip/giasip-skills",
+  "license": "MIT",
+  "keywords": [
+    "research",
+    "deep-research",
+    "fact-checking",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "GiaSip Research",
+    "shortDescription": "Evidence-gated, breadth-first research for Codex.",
+    "longDescription": "Run breadth-first Quick Recon, control claims through a ledger, and escalate only unresolved gaps to external Deep Research.",
+    "developerName": "GiaSip",
+    "category": "Productivity",
+    "capabilities": [
+      "Web Search",
+      "Multi-Agent Research",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/GiaSip/giasip-skills",
+    "defaultPrompt": [
+      "Use $giasip:research to investigate this topic with sourced Quick Recon.",
+      "Use $giasip:research to compare these options and verify central claims.",
+      "Use $giasip:research to decide whether this topic needs Deep Research."
+    ]
+  }
+}

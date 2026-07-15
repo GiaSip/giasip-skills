@@ -1,0 +1,20 @@
+{
+  "name": "giasip-skills",
+  "interface": {
+    "displayName": "GiaSip Skills"
+  },
+  "plugins": [
+    {
+      "name": "giasip",
+      "source": {
+        "source": "local",
+        "path": "./plugins/giasip"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
