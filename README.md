@@ -6,29 +6,32 @@
 ![Codex](https://img.shields.io/badge/codex-compatible-black)
 
 > **`giasip-research` is an evidence-grounded research agent for Claude Code and Codex.**
-> Unlike search-and-summarize skills, it treats every fact as a verifiable claim: each one carries an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate), and a chain of adversarial gates **rejects unsupported claims before they reach your report**. It answers not just "what did I find," but "how much should you trust each sentence."
+> Unlike search-and-summarize skills, it treats every checkable fact as a verifiable claim: each one carries an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate / community), and a chain of adversarial gates **keeps unsupported claims out of your conclusions**. It answers not just "what did I find," but "how much should you trust each claim."
 >
 > The repo also ships **`giasip-dispatch`**, a multi-model dispatcher for routing tasks to Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax.
 
 | Skill | What it gives you |
 |-------|-------------------|
-| **giasip-research** | A research orchestrator that grounds every claim in evidence. It runs a breadth-first Quick Recon with your host's native workers and web tools, records each finding as a **ClaimCard** (confidence + source family + "what the source said vs. what I inferred"), passes them through a **Claim Ledger Gate** that bars unsupported claims from your conclusions, and only escalates to a paid Deep Research platform for the gaps native search can't fill. An independent fact-check protocol and a fresh-reviewer audit keep it honest. |
+| **giasip-research** | A research orchestrator that grounds every claim in evidence. It runs a breadth-first Quick Recon with your host's native workers and web tools, records each finding as a **ClaimCard** (confidence + source family + "what the source said vs. what I inferred"), passes them through a **Claim Ledger Gate** that bars unsupported claims from your conclusions, and escalates to a paid Deep Research platform only when the task needs it — asking before it spends. An independent fact-check protocol and a fresh-reviewer audit (on by default for direct-delivery research) keep it honest. |
 | **giasip-dispatch** | A multi-model dispatcher — sends a task or prompt to other AI models (Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax) and retrieves results. Includes complexity-routing guidelines (API vs CLI vs SubAgent, single vs multi), but the final model choice is left to your agent's judgment. |
 
 ---
 
 ## Why giasip-research is different
 
-The scarce thing in AI research isn't retrieval breadth — every agent can search. It's **knowing how much to trust each sentence.** That is what this skill is built around.
+The scarce thing in AI research isn't retrieval breadth — every agent can search. It's **knowing how much to trust each claim.** That is what this skill is built around.
+
+> _Compared to typical search-and-summarize **skills** — not to Deep Research platforms, which giasip-research **orchestrates** rather than competes with._
 
 | | Generic research skill | **giasip-research** |
 |---|---|---|
-| **Output unit** | A prose summary | A ledger of claims, each with a confidence rating + source |
-| **Provenance** | "I found some sources" | Every claim tagged `owner` / `regulator` / `independent` / `vendor` / `aggregate` |
+| **What backs each fact** | Nothing — facts melt into prose | Each fact recorded as a ClaimCard (confidence + source family) and audited through a Claim Ledger |
+| **Provenance** | "I found some sources" | Every claim tagged `owner` / `regulator` / `official` / `independent` / `vendor` / `aggregate` / `community` |
 | **Unsupported claims** | Flow through into the summary | Bounced back, or marked `weak` and quarantined out of conclusion sentences |
 | **Verification order** | Trust the model | Primary-source grounding **>** source-family convergence **>** cross-model check |
 | **Same-family bias** | Unchecked | Cross-faction fact-check when the topic touches the model's own camp |
-| **Accuracy** (internal cases, small N) | ~70–80% baseline | ~85–90% after the Claim Ledger + fresh-reviewer gates |
+
+You still receive a readable report — the ClaimCards and Claim Ledger are the audit trail *behind* it, not what lands on your desk.
 
 ### What a claim looks like
 
@@ -46,9 +49,11 @@ source_says_vs_agent_infers:
   source_says: "applies from 2 August 2025"
   agent_infers: "GPAI providers must comply by that date"
 confidence: high
+gap: "no consolidated English text of the delegated timeline yet"
+counterquery: "EU AI Act GPAI obligations start date delayed 2025"
 ```
 
-The **Claim Ledger Gate** then enforces one rule your conclusions depend on: a `central` claim with **no primary-source locator never reaches your report**, and a claim backed only by aggregators or vendor self-reports is marked `weak` and moved to a "to be verified" list — it cannot appear in a conclusion sentence.
+The **Claim Ledger Gate** then enforces one rule your conclusions depend on: a `central` claim with **no primary-source locator is sent back for another search round**, and a claim backed only by aggregators or vendor self-reports is marked `weak` and moved to a "to be verified" list — it cannot appear in a conclusion sentence.
 
 ---
 
@@ -81,13 +86,16 @@ The **Claim Ledger Gate** then enforces one rule your conclusions depend on: a `
 A raw model produces confident prose whether or not the facts are grounded. giasip-research separates what a source actually said from what the agent inferred, tags each claim's source family, and structurally refuses to promote unsupported claims into conclusions.
 
 **Does it cost money to run?**
-Near-zero external dependencies — the Quick Recon uses your host's native web tools. It only escalates to a paid Deep Research platform when it finds a gap native search can't fill, and it reports the platform + expected cost and asks before spending.
+Near-zero external dependencies — the Quick Recon uses your host's native web tools. It escalates to a paid Deep Research platform only when the task needs it (a gap native search can't fill, a restricted-platform or academic source, or a high-stakes fact-check) — and it always reports the platform + expected cost and asks before spending.
 
 **Which hosts and languages does it support?**
 Claude Code and Codex, running one shared research method with thin runtime mappings. English and Chinese.
 
-**Is the ~85–90% accuracy figure a guarantee?**
-No. It comes from a small number of internal cases (N is small), not a public benchmark. The claim is narrower and more honest: unsupported statements are *structurally harder* to reach your report, because the Claim Ledger Gate and a fresh-reviewer audit sit between the evidence and the conclusion.
+**These gates are prompt rules — can't the model just ignore them?**
+That's why the final check isn't a prompt. On direct-delivery research, a *fresh reviewer* sub-agent — with its own context — re-reads the raw evidence artifacts (not the model's summary) and labels each conclusion `supported` / `unverifiable` / `conflict`. Reading the raw evidence instead of the model's own write-up is what catches "plausible but unsupported" claims.
+
+**What's this about ~85–90% accuracy?**
+It's a hypothesis from a small number of internal cases (N is small) — *not* a public benchmark, and *not* a claim about other tools: the same pipeline scored ~70–80% with the gates off and ~85–90% with them on. The honest takeaway isn't the number — it's that unsupported statements are *structurally harder* to reach your conclusions, because the Claim Ledger Gate and a fresh-reviewer audit sit between the evidence and the conclusion.
 
 ---
 
@@ -143,7 +151,10 @@ cp -R giasip-skills/skills/giasip-dispatch ~/.claude/skills/giasip-dispatch
 cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 ```
 
-> Both standalone and Plugin installs use the same Research behavior. The namespace changes only the invocation surface: `$giasip-research` standalone, `$giasip:research` through the Codex Plugin. Claude Code continues to use `/giasip-research`; `giasip-dispatch` remains `/giasip-dispatch` in Claude Code only.
+> Both standalone and plugin installs use the same Research behavior — only the invocation surface changes:
+> - **Standalone** (Options 1 & 4): `/giasip-research` in Claude Code, `$giasip-research` in Codex; `giasip-dispatch` is `/giasip-dispatch` in Claude Code.
+> - **Codex Plugin** (Option 2): `$giasip:research`.
+> - **Claude Code plugin** (Option 3): skills are namespaced by the plugin — `/giasip-skills:giasip-research` and `/giasip-skills:giasip-dispatch`.
 
 ## Distribution Structure
 
