@@ -1,6 +1,6 @@
 ---
 name: research
-description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, or decide whether a topic needs external Deep Research. Supports English, Chinese, Claude Code, and Codex."
+description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, or decide whether a topic needs external Deep Research. Supports English, Chinese, Claude Code, and Codex. Differs from generic search-and-summarize skills: every claim carries a confidence rating and a source-family tag, and unsupported claims are structurally blocked from conclusions."
 ---
 
 > ✦ A **GiaSip** skill · part of the `giasip` toolkit · github.com/GiaSip
