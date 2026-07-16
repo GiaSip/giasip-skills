@@ -5,31 +5,91 @@
 ![Claude Code](https://img.shields.io/badge/claude--code-compatible-orange)
 ![Codex](https://img.shields.io/badge/codex-compatible-black)
 
-> Cross-runtime agent skills by GiaSip &middot; github.com/GiaSip
+> **`giasip-research` is an evidence-grounded research agent for Claude Code and Codex.**
+> Unlike search-and-summarize skills, it treats every fact as a verifiable claim: each one carries an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate), and a chain of adversarial gates **rejects unsupported claims before they reach your report**. It answers not just "what did I find," but "how much should you trust each sentence."
 >
-> *`giasip-research` uses one shared research method with thin Claude Code and Codex runtime mappings. It is available as a standalone skill or as the namespaced `giasip` Codex Plugin. `giasip-dispatch` remains Claude Code-native.*
+> The repo also ships **`giasip-dispatch`**, a multi-model dispatcher for routing tasks to Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax.
 
-| Skill | Description |
-|-------|-------------|
-| **giasip-research** | Cross-runtime research orchestrator — runs a breadth-first Quick Recon with native workers and web tools, then decides whether to escalate to an external Deep Research platform. Built-in two-round Recon, Claim Ledger quality gate, persistence, and independent fact-check protocol keep the workflow evidence-grounded. |
-| **giasip-dispatch** | Multi-model dispatcher — sends a task or prompt to other AI models (Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax) and retrieves results. Includes complexity routing guidelines to help pick the right dispatch strategy (API vs CLI vs SubAgent, single vs multi), but the final model choice is left to your Claude's judgment. |
+| Skill | What it gives you |
+|-------|-------------------|
+| **giasip-research** | A research orchestrator that grounds every claim in evidence. It runs a breadth-first Quick Recon with your host's native workers and web tools, records each finding as a **ClaimCard** (confidence + source family + "what the source said vs. what I inferred"), passes them through a **Claim Ledger Gate** that bars unsupported claims from your conclusions, and only escalates to a paid Deep Research platform for the gaps native search can't fill. An independent fact-check protocol and a fresh-reviewer audit keep it honest. |
+| **giasip-dispatch** | A multi-model dispatcher — sends a task or prompt to other AI models (Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax) and retrieves results. Includes complexity-routing guidelines (API vs CLI vs SubAgent, single vs multi), but the final model choice is left to your agent's judgment. |
 
-## Distribution Structure
+---
 
+## Why giasip-research is different
+
+The scarce thing in AI research isn't retrieval breadth — every agent can search. It's **knowing how much to trust each sentence.** That is what this skill is built around.
+
+| | Generic research skill | **giasip-research** |
+|---|---|---|
+| **Output unit** | A prose summary | A ledger of claims, each with a confidence rating + source |
+| **Provenance** | "I found some sources" | Every claim tagged `owner` / `regulator` / `independent` / `vendor` / `aggregate` |
+| **Unsupported claims** | Flow through into the summary | Bounced back, or marked `weak` and quarantined out of conclusion sentences |
+| **Verification order** | Trust the model | Primary-source grounding **>** source-family convergence **>** cross-model check |
+| **Same-family bias** | Unchecked | Cross-faction fact-check when the topic touches the model's own camp |
+| **Accuracy** (internal cases, small N) | ~70–80% baseline | ~85–90% after the Claim Ledger + fresh-reviewer gates |
+
+### What a claim looks like
+
+Instead of an unsourced sentence buried in a paragraph, each fact becomes a structured, auditable card:
+
+```yaml
+claim_id: r0716-market-A1
+claim: "The EU AI Act's GPAI obligations apply from 2 August 2025."
+importance: central
+claim_type: factual
+source_url: https://eur-lex.europa.eu/eli/reg/2024/1689/oj   # primary source
+source_type: regulator          # not an aggregator or blog
+evidence: "Art. 113(b) — locator: OJ text, applicability section"
+source_says_vs_agent_infers:
+  source_says: "applies from 2 August 2025"
+  agent_infers: "GPAI providers must comply by that date"
+confidence: high
 ```
-skills/giasip-research/                   # Canonical shared Research skill
-├── SKILL.md
-├── agents/openai.yaml                    # Standalone Codex metadata
-└── references/
 
-plugins/giasip/                           # Codex Plugin package
-├── .codex-plugin/plugin.json
-└── skills/research/                       # Generated namespaced copy
+The **Claim Ledger Gate** then enforces one rule your conclusions depend on: a `central` claim with **no primary-source locator never reaches your report**, and a claim backed only by aggregators or vendor self-reports is marked `weak` and moved to a "to be verified" list — it cannot appear in a conclusion sentence.
 
-.agents/plugins/marketplace.json          # Repo marketplace for Codex
-scripts/sync_codex_plugin.py              # Canonical skill → plugin bundle sync/check
-skills/giasip-dispatch/                   # Claude Code-native dispatcher
-```
+---
+
+## Quick Start
+
+1. **Install Research for your host**:
+   ```bash
+   # Claude Code
+   npx skills add GiaSip/giasip-skills --global --skill giasip-research --agent claude-code --yes
+
+   # Codex
+   npx skills add GiaSip/giasip-skills --global --skill giasip-research --agent codex --yes
+
+   # Or install the namespaced Codex Plugin
+   codex plugin marketplace add GiaSip/giasip-skills
+   codex plugin add giasip@giasip-skills
+   ```
+
+2. **Try it**:
+   - Claude Code: `/giasip-research Research the current state of humanoid robot regulations`
+   - Codex: `$giasip-research Research the current state of humanoid robot regulations`
+   - Codex Plugin: `$giasip:research Research the current state of humanoid robot regulations`
+   - Or simply describe the research task in either host.
+
+---
+
+## FAQ
+
+**How is this different from just asking Claude to research something?**
+A raw model produces confident prose whether or not the facts are grounded. giasip-research separates what a source actually said from what the agent inferred, tags each claim's source family, and structurally refuses to promote unsupported claims into conclusions.
+
+**Does it cost money to run?**
+Near-zero external dependencies — the Quick Recon uses your host's native web tools. It only escalates to a paid Deep Research platform when it finds a gap native search can't fill, and it reports the platform + expected cost and asks before spending.
+
+**Which hosts and languages does it support?**
+Claude Code and Codex, running one shared research method with thin runtime mappings. English and Chinese.
+
+**Is the ~85–90% accuracy figure a guarantee?**
+No. It comes from a small number of internal cases (N is small), not a public benchmark. The claim is narrower and more honest: unsupported statements are *structurally harder* to reach your report, because the Claim Ledger Gate and a fresh-reviewer audit sit between the evidence and the conclusion.
+
+---
 
 ## Installation
 
@@ -85,28 +145,22 @@ cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 
 > Both standalone and Plugin installs use the same Research behavior. The namespace changes only the invocation surface: `$giasip-research` standalone, `$giasip:research` through the Codex Plugin. Claude Code continues to use `/giasip-research`; `giasip-dispatch` remains `/giasip-dispatch` in Claude Code only.
 
----
+## Distribution Structure
 
-## Quick Start
+```
+skills/giasip-research/                   # Canonical shared Research skill
+├── SKILL.md
+├── agents/openai.yaml                    # Standalone Codex metadata
+└── references/
 
-1. **Install Research for your host**:
-   ```bash
-   # Claude Code
-   npx skills add GiaSip/giasip-skills --global --skill giasip-research --agent claude-code --yes
+plugins/giasip/                           # Codex Plugin package
+├── .codex-plugin/plugin.json
+└── skills/research/                       # Generated namespaced copy
 
-   # Codex
-   npx skills add GiaSip/giasip-skills --global --skill giasip-research --agent codex --yes
-
-   # Or install the namespaced Codex Plugin
-   codex plugin marketplace add GiaSip/giasip-skills
-   codex plugin add giasip@giasip-skills
-   ```
-
-2. **Try it**:
-   - Claude Code: `/giasip-research Research the current state of humanoid robot regulations`
-   - Codex: `$giasip-research Research the current state of humanoid robot regulations`
-   - Codex Plugin: `$giasip:research Research the current state of humanoid robot regulations`
-   - Or simply describe the research task in either host.
+.agents/plugins/marketplace.json          # Repo marketplace for Codex
+scripts/sync_codex_plugin.py              # Canonical skill → plugin bundle sync/check
+skills/giasip-dispatch/                   # Claude Code-native dispatcher
+```
 
 ---
 
