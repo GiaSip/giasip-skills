@@ -5,8 +5,7 @@
 ![Claude Code](https://img.shields.io/badge/claude--code-compatible-orange)
 ![Codex](https://img.shields.io/badge/codex-compatible-black)
 
-> **`giasip-research` is an evidence-grounded research agent for Claude Code and Codex.**
-> Unlike search-and-summarize skills, it treats every checkable fact as a verifiable claim: each one carries an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate / community), and a chain of adversarial gates **keeps unsupported claims out of your conclusions**. It answers not just "what did I find," but "how much should you trust each claim."
+> **Every answer from `giasip-research` comes with a Claim Ledger** — an auditable record where each fact is a claim carrying an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate / community). A chain of adversarial gates **keeps unsupported claims out of your conclusions**, so this evidence-grounded skill answers not just "what did I find," but "how much should you trust each claim." One research method, mapped onto Claude Code and Codex.
 >
 > The repo also ships **`giasip-dispatch`**, a multi-model dispatcher for routing tasks to Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax.
 
@@ -54,6 +53,16 @@ counterquery: "EU AI Act GPAI obligations start date delayed 2025"
 ```
 
 The **Claim Ledger Gate** then enforces one rule your conclusions depend on: a `central` claim with **no primary-source locator is sent back for another search round**, and a claim backed only by aggregators or vendor self-reports is marked `weak` and moved to a "to be verified" list — it cannot appear in a conclusion sentence.
+
+### The verification order most agents get backwards
+
+Multi-model cross-checking is widely treated as the gold standard. giasip-research ranks it **last**:
+
+> **primary-source grounding  >  source-family convergence  >  cross-model cross-check**
+
+One model that actually read the primary source beats three models cross-checking each other from memory. Heterogeneous reviewers catch blind spots — they don't substitute for a primary source nobody read. And when a topic touches the reviewing model's own camp, a **cross-faction** model casts the deciding vote.
+
+→ Full method: **[The Claim Ledger Method](docs/claim-ledger-method.md)** · see it in action: **[worked example](examples/)**
 
 ---
 
@@ -223,6 +232,8 @@ Dependency check: `command -v codex gemini kimi node curl python3 jq perl`
 
 | File | Description |
 |------|-------------|
+| `docs/claim-ledger-method.md` | The Claim Ledger Method — full write-up of the evidence-grounding approach (and its own claims audited by it) |
+| `examples/README.md` | Worked example — how a confirmed, a quarantined, and a bounced claim flow through the gates |
 | `skills/giasip-research/references/platform-profiles.md` | Deep Research platform capability cards (speed/quality/context ratings) |
 | `skills/giasip-research/references/matching-rules.md` | Platform matching decision tree (language routing, special requirements) |
 | `skills/giasip-research/references/fact-check-protocol.md` | Independent fact-check protocol with cross-faction discipline |
