@@ -70,7 +70,7 @@ One model that actually read the primary source beats three models cross-checkin
 
 The Claim Ledger isn't only for the cheap first pass — the **same ledger governs the whole research supply chain**, including the expensive parts. That is what makes this an *orchestrator* rather than another search box.
 
-- **Recon before you spend.** A short in-house recon runs first. A paid Deep Research platform is brought in only for gaps native search can't reach — and never without reporting the platform and expected cost and asking first.
+- **Recon before you spend.** By default a short in-house recon runs first, and a paid Deep Research platform is brought in only for gaps native search can't reach (you can also point it straight at Deep Research when you already know that's what you need). Either way it reports the platform and expected cost and waits for approval — unless you've told it to submit without asking.
 - **Only confirmed claims seed the paid run.** When it does escalate, the Deep Research prompt is built from `confirmed` ledger claims only — `weak` and `unresolved` ones are left out, so the paid run isn't sent chasing an unverified anchor.
 - **Returned Deep Research is re-gated, not trusted.** The report that comes back is not pasted in. Its claims are extracted into the same ClaimCards, run through the same gate, and reconciled against the recon ledger — a paid platform hallucinates too, and doesn't get a pass for being expensive.
 - **Pick up where you left off.** A Deep Research run can take an hour; you often return the next day. Each run persists its ledger, raw artifacts, and a `manifest` state file, so a new session resumes exactly where the last one stopped.

@@ -102,7 +102,7 @@ In the Claim Ledger this lands as `status: weak` — a central, vendor-only clai
 
 The gates above run on the cheap first pass, but the same ledger stays in charge through the expensive parts too:
 
-- **Recon before paid escalation.** A short in-house recon runs first; a paid Deep Research platform is engaged only for gaps native search can't reach — and only after reporting the platform and estimated cost and getting the go-ahead.
+- **Recon before paid escalation.** By default a short in-house recon runs first, and a paid Deep Research platform is engaged only for gaps native search can't reach — though the user can skip recon and go straight to Deep Research when that's the known need. Before spending, it reports the platform and estimated count/cost and waits for approval, unless the user has pre-authorized direct submission.
 - **Confirmed-only seeding.** The Deep Research prompt is built from `confirmed` ledger claims only. `weak` and `unresolved` claims are withheld, so the paid run isn't anchored to something the ledger hasn't verified.
 - **Reflow, not trust.** The returned Deep Research report is not pasted in. Its claims are extracted into ClaimCards, passed through the same gate, and reconciled against the recon ledger — a paid platform hallucinates too, and its conclusions do not automatically override a primary source the recon already grounded.
 - **Persistence and resume.** Each run persists its manifest, raw artifacts, ledger, prompts, and audits. Because a Deep Research run can take an hour and the user may return in a new session, the manifest records the run state (`in_recon` / `awaiting_user_dr` / `delivered` / …) so work resumes without loss.
