@@ -21,6 +21,8 @@ risk_reason: "policy/legal effective date, central to the answer"
 source_family: regulator
 locator: "Art. 113(b), OJ applicability section"
 status: confirmed
+merged_from: 0
+counterquery: null             # already primary-sourced; no reverse search needed
 ```
 
 A regulator-level primary source with a locator. **It clears the gate** and can be
@@ -60,6 +62,7 @@ risk_reason: "central obligation with no regulatory text located"
 source_family: community       # a forum comment
 locator: null                  # nothing to point at
 status: unresolved
+merged_from: 0
 counterquery: "EU AI Act GPAI remediation timeline obligation text"
 ```
 
