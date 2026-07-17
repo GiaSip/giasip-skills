@@ -98,6 +98,26 @@ counterquery: "does claim-level verification measurably reduce hallucination in 
 
 In the Claim Ledger this lands as `status: weak` — a central, vendor-only claim with no independent locator, so it's quarantined to "to be verified," never stated as a conclusion. We keep it here, labeled honestly, because a method about calibrated trust should apply that calibration to itself.
 
+## The ledger governs the whole supply chain
+
+The gates above run on the cheap first pass, but the same ledger stays in charge through the expensive parts too:
+
+- **Recon before paid escalation.** By default a short in-house recon runs first, and a paid Deep Research platform is engaged only for gaps native search can't reach — though the user can skip recon and go straight to Deep Research when that's the known need. Before spending, it reports the platform and estimated count/cost and waits for approval, unless the user has pre-authorized direct submission.
+- **Confirmed-only seeding.** The Deep Research prompt is built from `confirmed` ledger claims only. `weak` and `unresolved` claims are withheld, so the paid run isn't anchored to something the ledger hasn't verified.
+- **Reflow, not trust.** The returned Deep Research report is not pasted in. Its claims are extracted into ClaimCards, passed through the same gate, and reconciled against the recon ledger — a paid platform hallucinates too, and its conclusions do not automatically override a primary source the recon already grounded.
+- **Persistence and resume.** Each run persists its manifest, raw artifacts, ledger, prompts, and audits. Because a Deep Research run can take an hour and the user may return in a new session, the manifest records the run state (`in_recon` / `awaiting_user_dr` / `delivered` / …) so work resumes without loss.
+
+So a claim is the single accounting unit from the first cheap search to the last paid report. That end-to-end custody — not the number of search rounds — is what the word *orchestrator* is doing here.
+
+## Lineage
+
+The method doesn't claim every move is new. Two ideas are borrowed on purpose:
+
+- **Claim-level quality control** — raising reliability from "summary-level" to "claim-level," and shifting that control left to the extraction stage — follows the claim-level QC approach in the deep-research skill of Claude Code Workflow.
+- **Interactive Scaling** — the second, targeted search round that searches *again with the first round's knowledge* instead of re-broadcasting breadth — follows [MiroThinker](https://github.com/MiroMindAI/MiroThinker)'s Interactive Scaling.
+
+The multi-round dispatch mechanics themselves are table stakes for any deep-research harness. What this method adds on top is the part that governs the whole supply chain: the source-family verification order (primary-source > cross-model), confirmed-only seeding of paid runs, re-gating of returned Deep Research through the same ledger, cross-session persistence, and the artifact-reading Mini Assurance audit.
+
 ## Using it
 
 The method ships as the `giasip-research` skill for Claude Code and Codex. See the [repository README](../README.md) to install and run it, and [`examples/`](../examples/) for a worked run showing a bounced claim.

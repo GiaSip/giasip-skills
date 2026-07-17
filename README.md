@@ -5,13 +5,13 @@
 ![Claude Code](https://img.shields.io/badge/claude--code-compatible-orange)
 ![Codex](https://img.shields.io/badge/codex-compatible-black)
 
-> **`giasip-research` runs every finding through a Claim Ledger** — an auditable record where each recorded claim carries an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate / community). A chain of adversarial gates **keeps unsupported claims out of your conclusions**, so this evidence-grounded skill answers not just "what did I find," but "how much should you trust each claim." One research method, mapped onto Claude Code and Codex.
+> **`giasip-research` runs every finding through a Claim Ledger** — an auditable record where each claim, first captured as a ClaimCard, carries an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate / community). A chain of adversarial gates **keeps unsupported claims out of your conclusions**, so this evidence-grounded skill answers not just "what did I find," but "how much should you trust each claim." One research method, mapped onto Claude Code and Codex.
 >
 > The repo also ships **`giasip-dispatch`**, a multi-model dispatcher for routing tasks to Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax.
 
 | Skill | What it gives you |
 |-------|-------------------|
-| **giasip-research** | A research orchestrator that grounds every claim in evidence. It runs a breadth-first Quick Recon with your host's native workers and web tools, records each finding as a **ClaimCard** (confidence + source family + "what the source said vs. what I inferred"), passes them through a **Claim Ledger Gate** that bars unsupported claims from your conclusions, and escalates to a paid Deep Research platform only when the task needs it — asking before it spends. An independent fact-check protocol and a fresh-reviewer audit (on by default for direct-delivery research) keep it honest. |
+| **giasip-research** | A research orchestrator that grounds every claim in evidence. It runs a breadth-first Quick Recon with your host's native workers and web tools, records each finding as a **ClaimCard** (confidence + source family + "what the source said vs. what I inferred"), passes them through a **Claim Ledger Gate** that bars unsupported claims from your conclusions, and escalates to a paid Deep Research platform only when the task needs it — asking before it spends, then re-gating whatever the paid run returns instead of trusting it. Runs persist to disk, so a long research task resumes across sessions. An independent fact-check protocol and a fresh-reviewer audit (on by default for direct-delivery research) keep it honest. |
 | **giasip-dispatch** | A multi-model dispatcher — sends a task or prompt to other AI models (Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax) and retrieves results. Includes complexity-routing guidelines (API vs CLI vs SubAgent, single vs multi), but the final model choice is left to your agent's judgment. |
 
 ---
@@ -62,7 +62,22 @@ Multi-model cross-checking is widely treated as the gold standard. giasip-resear
 
 One model that actually read the primary source beats three models cross-checking each other from memory. Heterogeneous reviewers catch blind spots — they don't substitute for a primary source nobody read. And when a topic touches the reviewing model's own camp, a **cross-faction** model casts the deciding vote.
 
-→ Full method: **[The Claim Ledger Method](docs/claim-ledger-method.md)** · see it in action: **[worked example](examples/)**
+→ Full method & its lineage: **[The Claim Ledger Method](docs/claim-ledger-method.md)** · see it in action: **[worked example](examples/)**
+
+---
+
+## One ledger, end to end
+
+The Claim Ledger isn't only for the cheap first pass — the **same ledger governs the whole research supply chain**, including the expensive parts. That is what makes this an *orchestrator* rather than another search box.
+
+- **Recon before you spend.** By default a short in-house recon runs first, and a paid Deep Research platform is brought in only for gaps native search can't reach (you can also point it straight at Deep Research when you already know that's what you need). Either way it reports the platform and expected cost and waits for approval — unless you've told it to submit without asking.
+- **Only confirmed claims seed the paid run.** When it does escalate, the Deep Research prompt is built from `confirmed` ledger claims only — `weak` and `unresolved` ones are left out, so the paid run isn't sent chasing an unverified anchor.
+- **Returned Deep Research is re-gated, not trusted.** The report that comes back is not pasted in. Its claims are extracted into the same ClaimCards, run through the same gate, and reconciled against the recon ledger — a paid platform hallucinates too, and doesn't get a pass for being expensive.
+- **Pick up where you left off.** A Deep Research run can take an hour; you often return the next day. Each run persists its ledger, raw artifacts, and a `manifest` state file, so a new session resumes exactly where the last one stopped.
+
+The through-line: **a claim is the one accounting unit from the first cheap search to the last paid report.**
+
+> **Standing on prior art.** Two of the moves are borrowed on purpose: claim-level quality control follows the deep-research skill in Claude Code Workflow, and the targeted second search round follows [MiroThinker](https://github.com/MiroMindAI/MiroThinker)'s Interactive Scaling. What giasip-research adds on top is the ledger *economics* — confirmed-only seeding, re-gated reflow, cross-session persistence — and the source-family verification order.
 
 ---
 
