@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] — 2026-07-17
+
+### Added
+- **Claim Ledger Method page** (`docs/claim-ledger-method.md`): full write-up of the evidence-grounding approach, with its own claims audited by the method.
+- **Worked example** (`examples/`): a Quick Recon Claim Ledger showing the gate clearing a regulator-sourced claim and quarantining vendor/community ones.
+
+### Changed
+- README (English/Chinese) reframed value-first for discovery/GEO around two pillars — claim-level verification + a closed-loop ledger that governs the whole research supply chain, including the expensive Deep Research reflow.
+- Documented prior-art lineage (Claude Code Workflow deep-research skill; MiroThinker Interactive Scaling) and what `giasip-research` adds on top: ledger economics (confirmed-only seeding, re-gated reflow, cross-session persistence) + the source-family verification order.
+- Qualified recon/authorization language as default-with-exceptions per cross-model (Fable5 + Codex) review; fixed 9 over-claims flagged in the value-first pass.
+- Distribution manifests (plugin + marketplace) bumped to `1.5.0`.
+
 ## [1.4.0] — 2026-07-15
 
 ### Added
