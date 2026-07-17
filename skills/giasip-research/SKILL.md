@@ -1,6 +1,6 @@
 ---
 name: giasip-research
-description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, or decide whether a topic needs external Deep Research. Supports English, Chinese, Claude Code, and Codex. Differs from generic search-and-summarize skills: every recorded claim carries a confidence rating and a source-family tag, and unsupported claims are structurally kept out of conclusions."
+description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, or decide whether a topic needs external Deep Research. Supports English, Chinese, Claude Code, and Codex. Differs from generic search-and-summarize skills: every claim is captured as a ClaimCard with a confidence rating and a source-family tag, and unsupported claims are kept out of conclusions by a Claim Ledger gate."
 ---
 
 > ✦ A **GiaSip** skill · part of the `giasip` toolkit · github.com/GiaSip
