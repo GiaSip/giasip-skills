@@ -31,7 +31,7 @@ evidence: "Art. 113(b) — locator: OJ text, applicability section"
 source_says_vs_agent_infers:
   source_says: "applies from 2 August 2025"
   agent_infers: "GPAI providers must comply by that date"
-confidence: high             # high | mid | low
+confidence: high             # high | medium | low
 gap: "no consolidated English text of the delegated timeline yet"
 counterquery: "EU AI Act GPAI obligations start date delayed 2025"
 ```
@@ -70,7 +70,7 @@ Multi-model cross-checking is widely treated as the gold standard. Here it ranks
 Two special cases sit on top of this order:
 
 - **Cross-faction fact-check** — when the topic touches the reviewing model's own camp (e.g. judging its own vendor's product), the final verdict must include a model from a different camp; a same-family reviewer has a structural blind spot.
-- **Mini Assurance** — before delivery, a *fresh* reviewer with its own context re-reads the **raw evidence artifacts**, not the summary, and labels each conclusion `supported` / `unverifiable` / `conflict`. Reading the raw evidence is what defeats evaluator leakage.
+- **Mini Assurance** — before delivery, a *fresh* reviewer with its own context re-reads the **raw evidence artifacts**, not the summary, and labels each conclusion `supported` / `unverifiable` / `conflict`. Reading the raw evidence is what defeats evaluator leakage. (This runs by default on direct-delivery research; it can be skipped, and if no independent reviewer is free it falls back to a clearly-labeled `degraded` audit rather than pretending to be independent.)
 
 ## Eating our own dog food
 
@@ -78,25 +78,25 @@ This page makes one claim worth auditing by its own method:
 
 > "The Claim Ledger and fresh-reviewer gates raise accuracy from ~70–80% to ~85–90%."
 
-Run it through the gate and it looks like this:
+Recorded as a ClaimCard it looks like this:
 
 ```yaml
 claim_id: method-doc-B1
 claim: "The gates raise accuracy from ~70-80% to ~85-90%."
 importance: central
 claim_type: metric
-source_type: vendor          # this is our own self-report
-evidence: "a small number of internal cases; 'accuracy' not formally defined, N small, no public rubric"
+source_url: null             # no external source exists — which is the whole problem
+source_type: vendor          # our own self-report
+evidence: "documented only as an 'expected effect' — no benchmark, no defined metric, N unknown"
 source_says_vs_agent_infers:
-  source_says: "internal cases moved in this range"
-  agent_infers: "the gates are what caused the improvement"
+  source_says: "an expected effect, stated as a hypothesis"
+  agent_infers: "the gates are what cause the improvement"
 confidence: low
-status: weak                 # vendor-only, no independent locator -> quarantined
 gap: "no benchmark, no defined metric, no external replication"
 counterquery: "does claim-level verification measurably reduce hallucination in research agents"
 ```
 
-By the method's own rules the number is `weak` — a vendor self-report with no independent locator — so it belongs in "to be verified," not in a conclusion. We keep it here, labeled honestly, because a method about calibrated trust should be willing to apply that calibration to itself.
+In the Claim Ledger this lands as `status: weak` — a central, vendor-only claim with no independent locator, so it's quarantined to "to be verified," never stated as a conclusion. We keep it here, labeled honestly, because a method about calibrated trust should apply that calibration to itself.
 
 ## Using it
 

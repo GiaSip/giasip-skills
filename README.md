@@ -5,7 +5,7 @@
 ![Claude Code](https://img.shields.io/badge/claude--code-compatible-orange)
 ![Codex](https://img.shields.io/badge/codex-compatible-black)
 
-> **Every answer from `giasip-research` comes with a Claim Ledger** — an auditable record where each fact is a claim carrying an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate / community). A chain of adversarial gates **keeps unsupported claims out of your conclusions**, so this evidence-grounded skill answers not just "what did I find," but "how much should you trust each claim." One research method, mapped onto Claude Code and Codex.
+> **`giasip-research` runs every finding through a Claim Ledger** — an auditable record where each recorded claim carries an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate / community). A chain of adversarial gates **keeps unsupported claims out of your conclusions**, so this evidence-grounded skill answers not just "what did I find," but "how much should you trust each claim." One research method, mapped onto Claude Code and Codex.
 >
 > The repo also ships **`giasip-dispatch`**, a multi-model dispatcher for routing tasks to Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax.
 
