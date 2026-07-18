@@ -54,7 +54,7 @@ For high-risk claims in the ledger **that have locators, read the primary source
 
 **Trigger**: enabled by default for the Recon direct delivery branch (Step 3 selects "deliver directly"); user can skip with `--skip-mini-assurance`; high fact-density tasks continue using v2.2 fact-check (v3 is its generalization, no double-run).
 
-**v2.5 lighter duty**: With Step 2.5's Claim Ledger, Mini Assurance no longer "re-extracts facts" but **audits whether the ledger supports the final report's topic sentences** — can each conclusion sentence trace back to a `confirmed` (not `weak`/`unresolved`) claim in the ledger.
+**v2.5 lighter duty**: With Step 2.5's Claim Ledger, Mini Assurance no longer "re-extracts facts" but **audits whether the ledger supports the final report's topic sentences** — can each conclusion sentence trace back to a `confirmed` (not `weak`/`unresolved`) claim in the ledger. **Adjudication mode**: split by sentence type — **fact sentences** map to the Claim Ledger as above; **conclusion / argument sentences** map to the Hypothesis Matrix instead (see the Adjudication task bullet below), not required to trace to a "confirmed fact."
 
 ### Flow
 
@@ -64,17 +64,19 @@ After the report draft is generated but before output to user, dispatch a **fres
 
 Reviewer input:
 - **Claim Ledger** (`<run_dir>/ledger.md`) + Round 1/Round 2 worker artifacts (`<run_dir>/artifacts/*.md`, persisted by the orchestrator in Step 0) + draft's "key claim list"
+- **(Adjudication only) extracted `warrant_records[]`**: `conclusion_id / hypothesis_id / evidence_ids / warrant / qualifier / key_defeater / contrary_claim_ids` — so the reviewer can audit each load-bearing conclusion without reading the draft's conclusions section (the conclusion sentences arrive here as extracted entries, not by reading the draft)
 - **Task**: for each report topic sentence, assign one of 3 labels:
   - ✅ `supported`: artifact contains original text support (must attach artifact path + key sentence)
   - ⚠️ `unverifiable`: not found in artifact (goes to "needs manual verification" list)
   - ❌ `conflict`: artifacts contradict each other (explain conflict point)
+- **★ Adjudication conclusion / argument sentences**: audit fact sentences against the ledger as above; **reasoning / conclusion sentences are checked against the Hypothesis Matrix via the extracted `warrant_records[]`** (below) — verify the evidence IDs exist with acceptable ledger status, the warrant sufficiently supports the conclusion, the qualifier matches evidence strength, and **known contrary claims / defeaters are complete and materially addressed** (not "zero contradicting claims"). Don't mislabel warrant / rebuttal reasoning sentences as `unverifiable` noise.
 - **Mandatory scope**: all numbers / strong recommendations / causal claims / person/company/time factual assertions
 - **Spot check**: 20% random sample of soft judgments
 - **Prohibited**: reading draft's "summary / conclusions" sections; changing writing style; filling in claims; outputting rewrite suggestions
 
 **Output**: append a `## Mini Assurance Audit` section at the end of the final report (3-label stats + unverifiable/conflict list + artifact reference paths), and persist the same section to `<run_dir>/audit.md`.
 
-**Cost**: +5-10 min per research run, +10-15% tokens. **Expected effect**: accuracy 70-80% → 85-90%.
+**Cost**: +5-10 min per research run, +10-15% tokens. **Expected effect** (internal estimate, not a benchmarked result): fewer unsupported claims reach the final report.
 
 **Upgrade path** (evaluate reviewer hit rate after accumulating cases):
 - < 5% hit rate → tighten rubric

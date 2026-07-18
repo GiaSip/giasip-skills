@@ -54,20 +54,26 @@ Known information (Round 1 high-confidence findings, do not re-search these):
 Gap to fill:
 [specific description of what's missing and why it matters]
 
+> **Adjudication (discrimination pass)**: if this Round 2 targets a surviving hypothesis, frame the gap as "find evidence **against** Hx" (a strong-inference-inspired discrimination pass), not filling a vague blank. Absence of evidence ≠ refutation — a failed search records an `unresolved` **Claim Ledger** entry and leaves the hypothesis status unchanged (never write `unresolved` as a hypothesis status).
+
 Tasks:
 1. Use the current host's web search capability to search 2-3 targeted keywords (design more precise search terms based on known information)
 2. Use the current host's page reader to read 1-2 most relevant results (high-risk gaps should prioritize direct primary source reading)
 3. Determine whether the gap has been filled
 
-Output format (**must include ClaimCard[] and ledger_patch so Round 2 corrections enter the ledger**):
+Output format (**must include ClaimCard[] and ledger_patch**; **Adjudication's falsification Round 2 also adds hypothesis_patch**):
 ## Gap Supplement — [gap name]
 
-### ClaimCard[] (same schema as Step 2, new/corrected claims)
+### ClaimCard[] (same schema as Step 2, new/corrected claims; use the complete claim_id `<run_id>-r2-<n>` — claims are written back into the Claim Ledger)
 - [output each new claim per Step 2 ClaimCard fields]
 
-### ledger_patch (operations on the master ledger)
+### ledger_patch (operations on the Claim Ledger)
 - `add` claim_id=... / `update` claim_id=... status→... / `merge` claim_id=... into=...
 - [explain what each patch corrects, supplements, or confirms from Round 1]
+
+### hypothesis_patch (★ Adjudication only — operations on the Hypothesis Matrix)
+- `update` hypothesis_id=... status→(active|conditional|rejected) [+ append supporting/contradicting_claim_ids + revision_reason]; optionally set matrix-level `matrix_outcome`(preferred|underdetermined|none_of_current)
+- [does the evidence weaken or corroborate the hypothesis, and why this status? absence ≠ refutation: a failed search records an `unresolved` **Claim Ledger** entry and leaves the hypothesis status unchanged — never set a hypothesis to `unresolved` or `rejected` just because nothing was found]
 
 ### Gap Status
 - [filled / partially filled / unfilled (needs Deep Research)]
