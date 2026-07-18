@@ -2,20 +2,20 @@
 
 > ✦ GiaSip 的跨运行时 Agent 技能集 · github.com/GiaSip
 >
-> **`giasip-research` 让每一条调研发现都先过一本 Claim Ledger** —— 一份可审计的账本，每条 claim 先被记成一张 ClaimCard，带明确的 **confidence 评级**和 **source-family 来源身份标注**（owner / regulator / official / independent / vendor / aggregate / community）。一连串对抗式关卡**把没有证据支撑的 claim 挡在结论之外**，所以它回答的不只是"我找到了什么"，而是"每条 claim 你该信几分"。一套调研方法，适配 Claude Code 和 Codex 两个 host。
+> **`giasip-research` 让每一条调研发现都先过一本 Claim Ledger** —— 一份可审计的账本，每条 claim 先被记成一张 ClaimCard，带明确的 **confidence 评级**和 **source-family 来源身份标注**（owner / regulator / official / independent / vendor / aggregate / community）。一连串对抗式关卡**把没有证据支撑的 claim 挡在结论之外**，所以它回答的不只是"我找到了什么"，而是"每条 claim 你该信几分"。**面对决策题和"为什么"题它更进一步**——立竞争假设（含一个 null）、专门找**反对**它们的证据、给出带 warrant 的判断（或诚实的"未定"），而不是丢回一堆事实。一套调研方法，适配 Claude Code 和 Codex 两个 host。
 >
 > 仓库同时提供 **`giasip-dispatch`**，一个把任务派发给 Codex / Gemini / Kimi / DeepSeek / 豆包 / Qwen / GLM / MiniMax 的多模型调用器。
 
 | 技能 | 它给你什么 |
 |------|-----------|
-| **giasip-research** | 研究调度器，把每条 claim 都锚定到证据。用当前 host 的 worker 和网页工具做广度优先 Quick Recon，每条发现记成一张 **ClaimCard**（confidence + source family + "原文说的 vs 我推断的"），再过一道 **Claim Ledger Gate** 把无凭据的 claim 挡在结论外；只在任务真需要时才升级到付费 Deep Research —— 花钱前先问，返回的结果还要**重新过账**而非盲信。每次运行落盘，长任务可跨会话续上。独立 fact-check 协议 + fresh-reviewer 审计（direct-delivery 调研默认开）守住诚实。 |
+| **giasip-research** | 研究调度器，把每条 claim 都锚定到证据。用当前 host 的 worker 和网页工具做广度优先 Quick Recon，每条发现记成一张 **ClaimCard**（confidence + source family + "原文说的 vs 我推断的"），再过一道 **Claim Ledger Gate** 把无凭据的 claim 挡在结论外；只在任务真需要时才升级到付费 Deep Research —— 花钱前先问，返回的结果还要**重新过账**而非盲信。每次运行落盘，长任务可跨会话续上。独立 fact-check 协议 + fresh-reviewer 审计（direct-delivery 调研默认开）守住诚实。面对决策/论证题（"该 A 还是 B""为什么 Y"）会启用 **Hypothesis Spine（假设脊椎）**——竞争假设（含 null）→ 专门找反证的第二轮 → 带 warrant 或诚实 `underdetermined` 的结论，而不是堆事实。 |
 | **giasip-dispatch** | 多模型调用器 —— 把任务或 prompt 一键派发给其他 AI 模型（Codex / Gemini / Kimi / DeepSeek / 豆包 / Qwen / GLM / MiniMax）执行并取回结果。含复杂度路由指引（API vs CLI vs SubAgent、单派 vs 多派），但最终选哪个模型交给你自己的 agent 临场判断。 |
 
 ---
 
 ## 为什么 giasip-research 与众不同
 
-AI 调研稀缺的从来不是检索广度——谁都能搜。稀缺的是**知道每条 claim 该信几分**。这正是这个 skill 的立身之本。
+AI 调研稀缺的从来不是检索广度——谁都能搜。稀缺的是两件事：**知道每条 claim 该信几分**，以及——面对决策题——**知道证据到底支持哪个答案**。这个 skill 两者都是立身之本。
 
 > _对比对象是常见的"搜索+总结"型**技能**，不是 Deep Research 平台——后者 giasip-research 是**调度**它们，而非与之竞争。_
 
@@ -26,6 +26,7 @@ AI 调研稀缺的从来不是检索广度——谁都能搜。稀缺的是**知
 | **无凭据 claim** | 直接混进总结 | 打回，或标 `weak` 隔离出结论句 |
 | **验证顺序** | 信模型 | 一手源接地 **>** 来源家族收敛 **>** 跨模型交叉核 |
 | **同阵营偏见** | 不设防 | 涉及模型自家阵营时，跨阵营 fact-check |
+| **决策 / "为什么"题** | 堆事实，判断留给你 | 竞争假设（含 null）→ 找**反证** → 带 warrant 的判断，或诚实 `underdetermined` |
 
 你拿到的仍是一份可读的报告——ClaimCard 和 Claim Ledger 是报告**背后**的审计线，不是丢到你桌上的东西。
 
@@ -78,6 +79,20 @@ Claim Ledger 不只用在廉价的第一轮——**同一本账管到整条调�
 
 ---
 
+## 从事实到被辩护的判断
+
+Claim Ledger 告诉你*每条事实该信几分*。但面对**决策题和"为什么"题**，一堆可信的事实还不是答案——你要知道它们到底支持哪个结论。这就是 **Hypothesis Spine（假设脊椎，v1.6.0 新增）**，架在覆盖与事实确定性之上的第三根轴。
+
+- **只在该开时才开。** 查事实、画格局类任务完全跳过，不添僵硬。它只对*论证/决策*类任务（"该不该做 X""A 还是 B""为什么 Y"）启用，并带两段式复查——被误判成查询的决策题仍会被升级。
+- **竞争假设，含一个 null。** 广度侦察后，发现被收敛成 2-3 个相互竞争的候选答案——其中永远有一个 null / 现状 / "不值得做"的选项，使框架不会被悄悄导向"行动"。
+- **证伪，而非确认。** 精确的第二轮专门找**反对**存活假设的证据（Platt 强推断启发），不是找更多支持。"没搜到"记为 unresolved——证据缺席绝不算证伪。
+- **一个带 warrant 的结论，或诚实的"未定"。** load-bearing 结论附带它的证据、推理，和**关键反驳**——什么会推翻它。证据不足以裁决时返回 `underdetermined` 并指出缺什么，而不硬凑一个赢家。
+- **假设永不污染账本。** 假设放在与 Claim Ledger 独立的一节，"一个还没被否掉的假设"绝不会被当成"一条已确认的事实"。
+
+→ 完整规格：**[references/hypothesis-spine.md](../../skills/giasip-research/references/hypothesis-spine.md)**（英文）
+
+---
+
 ## 快速开始
 
 1. **为你的 host 安装 Research**：
@@ -101,6 +116,9 @@ Claim Ledger 不只用在廉价的第一轮——**同一本账管到整条调�
 **跟直接让 Claude 做调研有什么区别？**
 裸模型不管事实是否有据，都会写出很自信的散文。giasip-research 把"原文说的"和"agent 推断的"分开，给每条 claim 标来源家族，并在结构上拒绝把无凭据的 claim 升格成结论。
 
+**决策或推荐类问题（"该 A 还是 B""为什么 Y"）怎么处理？**
+这类会触发 **Hypothesis Spine（假设脊椎）**：不是丢回一堆事实，而是立 2-3 个竞争假设（含一个 null 选项），跑一轮专门找**反对**证据的搜索，再给一个带 warrant 的结论——它的证据、推理，和能推翻它的那一件事。证据不足以裁决时返回 `underdetermined` 并指出缺什么，而不硬选。查事实、画格局类任务自动跳过，不在不需要的地方加负担。
+
 **跑起来要花钱吗？**
 基本零外部依赖——Quick Recon 用你 host 自带的网页工具。只有任务真需要时（native 搜索够不到的缺口、受限平台/学术源、或高 stakes 的 fact-check）才升级到付费 Deep Research，而且总会先报平台 + 预计成本再问你。
 
@@ -110,8 +128,8 @@ Claude Code 和 Codex，一套调研方法、两层薄适配。中英双语。
 **这些关卡是 prompt 规则——模型不能直接无视吗？**
 所以最后一道防线不是 prompt。在 direct-delivery 调研里，一个**独立 context 的 fresh reviewer** 会重读**落盘的原始 artifact**（而不是模型自己写的摘要），给每条结论标 `supported` / `unverifiable` / `conflict`。读原始证据而非模型自述，正是抓住"看似合理但没证据"的关键。
 
-**~85–90% 准确率是怎么回事？**
-这是来自少量内部案例的**假设**（N 很小）——**不是**公开 benchmark，也**不是**对其他工具的测量：同一条管道，关掉关卡约 ~70–80%，开启后 ~85–90%。诚实的结论不在这个数字，而在于——无凭据的陈述在结构上更难进入你的结论，因为 Claim Ledger Gate 和 fresh-reviewer 审计横在证据与结论之间。
+**它真能提升准确率吗？**
+我们不公布 benchmark 数字。少量内部案例里，开启关卡的管道比关掉关卡明显产出更少无凭据的 claim——但这是内部观察，不是公开 benchmark，也不是对其他工具的测量。诚实的结论不在数字，而在于：无凭据的陈述在结构上更难进入你的结论，因为 Claim Ledger Gate 和 fresh-reviewer 审计横在证据与结论之间。
 
 ---
 

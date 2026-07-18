@@ -5,20 +5,20 @@
 ![Claude Code](https://img.shields.io/badge/claude--code-compatible-orange)
 ![Codex](https://img.shields.io/badge/codex-compatible-black)
 
-> **`giasip-research` runs every finding through a Claim Ledger** — an auditable record where each claim, first captured as a ClaimCard, carries an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate / community). A chain of adversarial gates **keeps unsupported claims out of your conclusions**, so this evidence-grounded skill answers not just "what did I find," but "how much should you trust each claim." One research method, mapped onto Claude Code and Codex.
+> **`giasip-research` runs every finding through a Claim Ledger** — an auditable record where each claim, first captured as a ClaimCard, carries an explicit **confidence rating** and a **source-family tag** (owner / regulator / official / independent / vendor / aggregate / community). A chain of adversarial gates **keeps unsupported claims out of your conclusions**, so this evidence-grounded skill answers not just "what did I find," but "how much should you trust each claim." **For decision and "why" questions it goes a step further** — forming competing hypotheses (including a null), hunting for evidence *against* them, and delivering a warrant-gated judgment (or an honest "undetermined") instead of a pile of facts. One research method, mapped onto Claude Code and Codex.
 >
 > The repo also ships **`giasip-dispatch`**, a multi-model dispatcher for routing tasks to Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax.
 
 | Skill | What it gives you |
 |-------|-------------------|
-| **giasip-research** | A research orchestrator that grounds every claim in evidence. It runs a breadth-first Quick Recon with your host's native workers and web tools, records each finding as a **ClaimCard** (confidence + source family + "what the source said vs. what I inferred"), passes them through a **Claim Ledger Gate** that bars unsupported claims from your conclusions, and escalates to a paid Deep Research platform only when the task needs it — asking before it spends, then re-gating whatever the paid run returns instead of trusting it. Runs persist to disk, so a long research task resumes across sessions. An independent fact-check protocol and a fresh-reviewer audit (on by default for direct-delivery research) keep it honest. |
+| **giasip-research** | A research orchestrator that grounds every claim in evidence. It runs a breadth-first Quick Recon with your host's native workers and web tools, records each finding as a **ClaimCard** (confidence + source family + "what the source said vs. what I inferred"), passes them through a **Claim Ledger Gate** that bars unsupported claims from your conclusions, and escalates to a paid Deep Research platform only when the task needs it — asking before it spends, then re-gating whatever the paid run returns instead of trusting it. Runs persist to disk, so a long research task resumes across sessions. An independent fact-check protocol and a fresh-reviewer audit (on by default for direct-delivery research) keep it honest. For decision / adjudication tasks ("should we A or B," "why Y") it engages a **Hypothesis Spine** — competing hypotheses (incl. a null) → a second round that hunts for counter-evidence → a warrant-gated or honestly `underdetermined` conclusion, instead of piling up facts. |
 | **giasip-dispatch** | A multi-model dispatcher — sends a task or prompt to other AI models (Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax) and retrieves results. Includes complexity-routing guidelines (API vs CLI vs SubAgent, single vs multi), but the final model choice is left to your agent's judgment. |
 
 ---
 
 ## Why giasip-research is different
 
-The scarce thing in AI research isn't retrieval breadth — every agent can search. It's **knowing how much to trust each claim.** That is what this skill is built around.
+The scarce thing in AI research isn't retrieval breadth — every agent can search. It's two things: **knowing how much to trust each claim**, and — for decision questions — **knowing which answer the evidence actually supports.** This skill is built around both.
 
 > _Compared to typical search-and-summarize **skills** — not to Deep Research platforms, which giasip-research **orchestrates** rather than competes with._
 
@@ -29,6 +29,7 @@ The scarce thing in AI research isn't retrieval breadth — every agent can sear
 | **Unsupported claims** | Flow through into the summary | Bounced back, or marked `weak` and quarantined out of conclusion sentences |
 | **Verification order** | Trust the model | Primary-source grounding **>** source-family convergence **>** cross-model check |
 | **Same-family bias** | Unchecked | Cross-faction fact-check when the topic touches the model's own camp |
+| **Decision / "why" questions** | Piles up facts, leaves you to judge | Competing hypotheses (incl. a null) → seeks *disconfirming* evidence → a warrant-gated judgment, or an honest `underdetermined` |
 
 You still receive a readable report — the ClaimCards and Claim Ledger are the audit trail *behind* it, not what lands on your desk.
 
@@ -81,6 +82,20 @@ The through-line: **a claim is the one accounting unit from the first cheap sear
 
 ---
 
+## From facts to a defended judgment
+
+The Claim Ledger tells you *how much to trust each fact*. But for **decision and "why" questions**, a pile of trustworthy facts still isn't an answer — you need to know which conclusion they actually support. That is the **Hypothesis Spine** (added in v1.6.0), a third axis on top of coverage and factual certainty.
+
+- **It only turns on when it should.** Look-up and landscape-mapping tasks skip it entirely — no rigidity added. It engages for *adjudication* tasks ("should we do X," "A or B," "why Y"), with a two-stage recheck so a decision question that was mis-classified as a lookup still escalates.
+- **Competing hypotheses, including a null.** After the breadth pass, the findings are converged into 2-3 rival candidate answers — one of them always a null / status-quo / "not worth it" option, so the framing isn't quietly rigged toward acting.
+- **Falsification, not confirmation.** The targeted second round hunts for evidence *against* the surviving hypotheses (strong-inference-inspired), not more evidence for them. "Not found" is recorded as unresolved — absence of evidence never counts as disproof.
+- **A warrant-gated conclusion — or an honest "undetermined."** A load-bearing conclusion ships with its evidence, its reasoning, and its **key defeater** — the specific thing that would overturn it. When the evidence can't decide, the skill returns `underdetermined` and names what's missing, instead of forcing a single winner.
+- **Hypotheses never pollute the ledger.** They live in a separate section from the Claim Ledger, so "a hypothesis that's still standing" is never mistaken for "a confirmed fact."
+
+→ Full spec: **[references/hypothesis-spine.md](skills/giasip-research/references/hypothesis-spine.md)**
+
+---
+
 ## Quick Start
 
 1. **Install Research for your host**:
@@ -109,6 +124,9 @@ The through-line: **a claim is the one accounting unit from the first cheap sear
 **How is this different from just asking Claude to research something?**
 A raw model produces confident prose whether or not the facts are grounded. giasip-research separates what a source actually said from what the agent inferred, tags each claim's source family, and structurally refuses to promote unsupported claims into conclusions.
 
+**What about decision or recommendation questions ("should we A or B," "why Y")?**
+Those trigger the **Hypothesis Spine**: instead of returning a pile of facts, the skill forms 2-3 competing hypotheses (including a null option), runs a second search round that specifically hunts for evidence *against* them, and delivers a conclusion backed by a warrant — its evidence, its reasoning, and the one thing that would overturn it. If the evidence can't decide, it returns `underdetermined` and names what's missing, rather than forcing a pick. Fact-lookup and landscape-mapping tasks skip this automatically, so it never adds overhead where it isn't needed.
+
 **Does it cost money to run?**
 Near-zero external dependencies — the Quick Recon uses your host's native web tools. It escalates to a paid Deep Research platform only when the task needs it (a gap native search can't fill, a restricted-platform or academic source, or a high-stakes fact-check) — and it always reports the platform + expected cost and asks before spending.
 
@@ -118,8 +136,8 @@ Claude Code and Codex, running one shared research method with thin runtime mapp
 **These gates are prompt rules — can't the model just ignore them?**
 That's why the final check isn't a prompt. On direct-delivery research, a *fresh reviewer* sub-agent — with its own context — re-reads the raw evidence artifacts (not the model's summary) and labels each conclusion `supported` / `unverifiable` / `conflict`. Reading the raw evidence instead of the model's own write-up is what catches "plausible but unsupported" claims.
 
-**What's this about ~85–90% accuracy?**
-It's a hypothesis from a small number of internal cases (N is small) — *not* a public benchmark, and *not* a claim about other tools: the same pipeline scored ~70–80% with the gates off and ~85–90% with them on. The honest takeaway isn't the number — it's that unsupported statements are *structurally harder* to reach your conclusions, because the Claim Ledger Gate and a fresh-reviewer audit sit between the evidence and the conclusion.
+**Does it actually improve accuracy?**
+We don't publish a benchmark number. In a small number of internal cases the gated pipeline produced noticeably fewer unsupported claims than the same pipeline with the gates off — but that's an internal observation, not a public benchmark and not a claim about other tools. The honest takeaway isn't a number — it's that unsupported statements are *structurally harder* to reach your conclusions, because the Claim Ledger Gate and a fresh-reviewer audit sit between the evidence and the conclusion.
 
 ---
 
