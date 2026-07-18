@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] — 2026-07-18
+
+### Added
+- **giasip-research Hypothesis Spine (argument-validity third axis)**: Adjudication-mode tasks (decision / recommendation / "why" questions) now, after breadth, form 2-3 competing candidate answers (including a null / status-quo one, each with a type-appropriate discriminator), run a discrimination pass in Round 2 (strong-inference-inspired — "find evidence against Hx"), and close with a warrant-gated or `underdetermined` conclusion. Retrieval/Mapping tasks skip the spine (default Mapping + a two-stage recheck run in all modes) to avoid rigidity. New `references/hypothesis-spine.md` documents research modes, the Hypothesis Matrix schema, discrimination discipline (absence ≠ refutation), and the warrant gate. Hypotheses live in a separate ledger section, **never in the Claim Ledger** (avoids a circular self-justification hole).
+- **Research mode** added as a 7th Step-1 dimension (Retrieval / Mapping / Adjudication), with an explicit two-stage recheck after Round 1.
+
+### Changed
+- Round 2 template now emits `hypothesis_patch` (Adjudication) with complete `<run_id>-r2-<n>` claim IDs written back to the Claim Ledger; the gap-skip criterion no longer treats fact count as a coverage proxy for Adjudication.
+- Step 3 quality-control invariant is split by sentence type — fact sentences map to the Claim Ledger; conclusion / argument sentences map to the Hypothesis Matrix + warrant gate — and `underdetermined` is a legitimate terminal outcome (no forced single winner). The warrant-gate audit checks that known contrary claims / defeaters are materially addressed, not that contradicting evidence is absent.
+- Step 4 / Step 6 Deep Research path carries the hypothesis set + discriminators; DR reflow updates hypothesis status. Mini Assurance now audits Adjudication conclusion sentences against the Hypothesis Matrix via extracted warrant records.
+- Codex plugin bundle regenerated from the canonical skill; distribution manifests bumped to `1.6.0`.
+
+### Validated
+- Before shipping, two internal checks (n=1 each, not shipped): a regression run on a Retrieval/Mapping-type fact question — the spine correctly did not engage; and a single blind old-vs-new comparison on one Adjudication task, scored with an argument-validity rubric — the spine version scored higher on competing-hypothesis coverage, discrimination, and warrant discipline. These checks do not establish general effectiveness.
+
 ## [1.5.0] — 2026-07-17
 
 ### Added

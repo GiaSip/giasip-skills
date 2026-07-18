@@ -1,6 +1,6 @@
 ---
 name: research
-description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, or decide whether a topic needs external Deep Research. Supports English, Chinese, Claude Code, and Codex. Differs from generic search-and-summarize skills: every claim is captured as a ClaimCard with a confidence rating and a source-family tag, and unsupported claims are kept out of conclusions by a Claim Ledger gate."
+description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, decide whether a topic needs external Deep Research, or make an evidence-backed judgment/recommendation. Supports English, Chinese, Claude Code, and Codex. Differs from generic search-and-summarize skills: central verifiable claims are captured as ClaimCards with a confidence rating and a source-family tag, the Claim Ledger gate is designed to keep unsupported claims out of conclusions, and decision/adjudication questions run a Hypothesis Spine (competing hypotheses → discriminating evidence → warrant-gated conclusion)."
 ---
 
 > ✦ A **GiaSip** skill · part of the `giasip` toolkit · github.com/GiaSip
@@ -49,6 +49,7 @@ Apply one host mapping. Keep the research method below unchanged.
 All reference paths are relative to this `SKILL.md` and ship inside the same installed skill directory. Read them only when the matching branch is reached:
 
 - Before dispatching Recon workers: `references/subagent-templates.md`
+- For facet-decomposition examples (Step 2) and Adjudication-mode tasks (competing hypotheses / discrimination / warrant gate): `references/hypothesis-spine.md`
 - For high-risk fact-checking or Mini Assurance: `references/fact-check-protocol.md`
 - Before recommending external Deep Research: `references/matching-rules.md` and `references/platform-profiles.md`
 
@@ -66,7 +67,7 @@ Any task that **enters Recon, or skips Recon to escalate directly to DR**, first
   <run_dir>/
     manifest.md               # run state anchor (cross-session recovery entry, see below)
     artifacts/                # each recon worker facet/gap's full raw output, one .md
-    ledger.md                 # Claim Ledger master table (maintained in Step 2.5)
+    ledger.md                 # Claim Ledger master table (Step 2.5) + Hypothesis Matrix as an independent section (Adjudication, Step 2.5)
     recon-report.md           # final report for Recon direct delivery
     deep-research-prompt.md   # if escalated: generated DR prompt
     deep-research-raw/        # if escalated: raw reports returned by each platform
@@ -74,7 +75,7 @@ Any task that **enters Recon, or skips Recon to escalate directly to DR**, first
     audit.md                  # Mini Assurance / fact-check audit results
   ```
 - **Persistence is the orchestrator's responsibility, not the worker's**: after each Round 1 or Round 2 worker returns, the orchestrator immediately writes its **full raw output** to `<run_dir>/artifacts/<facet>.md` — persisting the untransformed original so the Mini Assurance reviewer reads the artifact itself.
-- **manifest.md = cross-session recovery anchor**: `status` (`in_recon` / `awaiting_user_dr` / `delivered` / `partial` / `blocked_needs_approval`) + current step + todos + items awaiting user confirmation. Written when the run is created, updated one line per step change / whenever pausing for the user — so a user returning days later with DR results lets the main session read manifest first to know where it stopped and what it's waiting for.
+- **manifest.md = cross-session recovery anchor**: `status` (`in_recon` / `awaiting_user_dr` / `delivered` / `partial` / `blocked_needs_approval`) + **research mode (Retrieval/Mapping/Adjudication — so a resumed session knows whether hypotheses need updating when DR returns)** + current step + todos + items awaiting user confirmation. Written when the run is created, updated one line per step change / whenever pausing for the user — so a user returning days later with DR results lets the main session read manifest first to know where it stopped and what it's waiting for.
 - **Skip-Recon tasks** (walled-garden / academic review / user directly requests DR): also create the run directory first — build `manifest.md` (`status: awaiting_user_dr` + flag `recon_skipped: true`) + an **empty `ledger.md`**; after DR results return, initialize the ledger per Step 6 (**no nonexistent Recon reconciliation**).
 - **Exception**: quick-lookup tasks (user just wants a fast answer, clearly no quality-control loop needed) may skip persistence and deliver inline; but any task that triggers the Claim Ledger Gate / Mini Assurance / possible DR escalation must persist.
 
@@ -87,8 +88,9 @@ Extract from user input:
 - **Hallucination tolerance**: extremely low (academic/legal/financial/model-license/primary-source verification) / low (tool selection/competitive) / medium (business) / high (exploratory)
 - **Citation requirement**: academic-grade (sentence-level tracing) / business-grade / informal
 - **Special platform needs**: whether CNKI / Xiaohongshu / WeChat Official Accounts / Twitter, etc. are needed
+- **Research mode** (determines whether the Hypothesis Spine engages): **Retrieval** (a single fact / price / list → skip the spine) / **Mapping** (survey / landscape / non-adjudicative comparison → coverage only; **default**) / **Adjudication** (why / evaluation / recommendation / decision — "should we", "which is better" → **fully engage the spine**). **When unsure, default to Mapping**; escalate to Adjudication only when the sub-question **requires comparing plausible options and defending an inferential judgment** (even if the outcome is `underdetermined`); route mixed tasks per sub-question. Full spec: `references/hypothesis-spine.md`.
 
-> **Explicit declaration (required)**: After analysis, state the six dimensions above — especially **hallucination tolerance + citation requirement** — in one or two lines before starting. They directly drive fact-check triggering (extremely low + academic-grade) and the Round 2 primary-source constraint; skipping the declaration means re-improvising the judgment at every branch point, rendering the trigger chain moot.
+> **Explicit declaration (required)**: After analysis, state the seven dimensions above — especially **hallucination tolerance + citation requirement + research mode** — in one or two lines before starting. They directly drive fact-check triggering (extremely low + academic-grade), the Round 2 primary-source constraint, and whether the Hypothesis Spine engages (Adjudication); skipping the declaration means re-improvising the judgment at every branch point, rendering the trigger chain moot.
 
 ### Step 2: Quick Recon — Round 1 (Breadth Reconnaissance)
 
@@ -106,14 +108,12 @@ Skip directly to Step 4 (platform matching) in these scenarios:
 
 Break the task into 2-3 **non-overlapping information facets** and dispatch one recon worker per facet using the selected runtime mapping. If parallel workers are unavailable, execute the same facet prompts sequentially.
 
-**Facet decomposition examples:**
+**Facet decomposition = diverge, then select on two axes** (not slotting the research type into a fixed template — templates make the model converge on the most typical three-part split and miss unknown angles):
+1. **Diverge**: privately list 4-6 candidate angles (default, not a hard rule; for high-uncertainty / high-risk topics include 1 cross-domain / challenger angle, but no novelty theater).
+2. **Select 2-3 that satisfy two orthogonal criteria at once**: ① cover **different decision-relevant unknowns** (non-overlapping) ② point to **different evidence sources / methods** (avoid re-answering the same question with correlated evidence). Selecting only on "different source" makes three workers re-answer one question with different sources.
+3. **Name the residual in one line**: state explicitly what these 2-3 facets **do not cover** (at k=2-3 coverage is inherently incomplete; making the residual explicit beats pretending completeness).
 
-| Research Type | Facet 1 | Facet 2 | Facet 3 (optional) |
-|---------------|---------|---------|---------------------|
-| Market research | Market size & growth trends | Key players & competitive landscape | Consumer profile / policy environment |
-| Competitive analysis | Feature comparison | Pricing & business models | User reviews & reputation |
-| Industry analysis | Value chain structure | Technology trends & drivers | Regulation & policy |
-| Tech selection | Candidate feature comparison | Community activity & maturity | Real-world cases / lessons learned |
+> Per-research-type example splits (market / competitive / industry / tech-selection) live in `references/hypothesis-spine.md` — reference examples, **not templates to slot into**.
 
 **Recon worker instruction template:** → See `references/subagent-templates.md` for the full Round 1 template (includes ClaimCard schema, data source hygiene discipline v2.4, and output format).
 
@@ -121,9 +121,11 @@ Break the task into 2-3 **non-overlapping information facets** and dispatch one 
 - **Primary**: the host's native web search + page reading tools — zero additional external quota
 - **Fallback**: a browser or extraction tool only when the native reader hits JS rendering or anti-scraping blocks
 
-### Step 2.5: Claim Ledger Gate + Gap Assessment & Round 2 (Conditional)
+### Step 2.5: Claim Ledger Gate + Hypothesis Matrix + Gap Assessment & Round 2 (Conditional)
 
-After all Round 1 workers return, the orchestrator runs a **Claim Ledger Gate** first, then does gap assessment to decide whether Round 2 is needed.
+After all Round 1 workers return, the orchestrator runs a **Claim Ledger Gate** first, then (Adjudication only) forms a **Hypothesis Matrix**, then does gap assessment to decide whether Round 2 is needed.
+
+> **Mode recheck (ALL modes run this — do it before the branch below).** Do the Round 1 findings require **comparing plausible competing answers to the same question** (and are there at least two live candidates)? **Yes** → escalate to Adjudication even if Step 1 tagged Retrieval/Mapping, and build the Hypothesis Matrix section below. **No** → the task stays Retrieval/Mapping and skips the Hypothesis Matrix. (Sources merely *disagreeing on a fact* → that's Claim Ledger conflict arbitration, not Adjudication.) This recheck lives here, above the Adjudication-only section, so a Mapping run cannot skip it and silently miss its own escalation.
 
 #### Claim Ledger Gate (v2.5)
 
@@ -147,6 +149,14 @@ Run through the gate in order:
 - **③ Heterogeneous reviewer faction (cross-faction) last**: escalate only when the topic involves AI same-faction content (see Step 3). This is the reviewer/model dimension, **orthogonal to ②'s "evidence source family" — don't conflate**.
 - Verdict: explicit conflicting evidence → refuted; insufficient evidence → unresolved (excluded from factual narrative); multi-source-family corroboration → confirmed.
 
+#### ★ Hypothesis Matrix (built when the mode recheck above lands on Adjudication; after breadth + the Claim Ledger Gate, before Round 2)
+
+> The third axis (argument validity — evidential and inferential support, not formal logical validity). **Retrieval / Mapping skip this section.** It converts scattered claims into **evidence-tested** candidate answers — the "information collector → argument engine" step that generic search-and-summarize flows omit. **Hypotheses do NOT enter the Claim Ledger** (to avoid polluting its confirmed/weak semantics and a circular self-justification hole); keep them in a separate section of the same `ledger.md`.
+
+- After breadth returns, converge the findings into **2-3 mutually competing candidate answers** (Chamberlin's multiple working hypotheses), **including one null / status-quo / "not worth doing" hypothesis** (to prevent nominal alternatives that share one hidden assumption). **Form hypotheses after breadth** (to prevent anchoring). Give each a **type-appropriate discriminator** (see hypothesis-spine.md §4).
+- Record per hypothesis: `hypothesis_id / candidate_answer / type(causal|decision|forecast) / supporting_claim_ids / contradicting_claim_ids / discriminator_or_falsifier / status(active|conditional|rejected) / revision_history / residual_uncertainty`; and a **matrix-level** `matrix_outcome(preferred|underdetermined|none_of_current)` (+ `preferred_hypothesis_id`). Note `underdetermined` is a matrix outcome, not a per-hypothesis status.
+- **Full schema, discrimination discipline, warrant gate, and the Claim-Ledger-vs-Matrix boundary: see `references/hypothesis-spine.md`.**
+
 #### Gap Assessment Logic
 
 > **Design philosophy** (inspired by MiroThinker's Interactive Scaling): one-shot broad search tends to miss key directions. Round 2's value lies in "searching again with Round 1's knowledge" using more precise keywords to fill critical gaps, not repeating Round 1's breadth.
@@ -154,28 +164,29 @@ Run through the gate in order:
 After collecting Round 1 results, check knowledge gaps item by item:
 
 **Round 2 triggers** (any one sufficient):
-- Round 1 revealed **unexpected new directions** not covered by original facets
-- Critical data points have only a single source, and that data point affects core judgment
-- Multiple workers reported **contradictory information** requiring cross-validation
-- Round 1 search keywords clearly missed an important angle (in hindsight, better keywords were available)
+- **Coverage gap**: Round 1 revealed unexpected new directions / a critical single-source data point affecting core judgment / contradictory workers / a clearly missed angle
+- **★ Discrimination gap (Adjudication mode)**: evidence cannot yet **distinguish** competing hypotheses → Round 2 designs a discriminating / disconfirming query (a strong-inference-inspired discrimination pass, "find evidence **against** Hx"), not filling a vague blank
 
 **Skip Round 2 conditions** (any one sufficient to skip):
-- Round 1 high-confidence findings ≥ 5, and gaps only involve peripheral details
+- **Retrieval/Mapping**: scope audit passes (against ① the user's original explicit ask ② discarded candidate angles ③ a generic-dimension backstop checklist — entities / process / space-time / stakeholders / rival hypotheses — only when a key residual gap remains); **Adjudication**: surviving hypotheses are sufficiently discriminated (**note: fact count ≠ coverage proxy — do NOT use "≥N findings" as a skip criterion**)
 - Gap nature requires **walled-garden platforms or academic full text** — Round 2 can't reach them; escalate to Deep Research directly
 - User's need is quick-lookup level, Round 1 is sufficient
 - Round 1 already consumed significant time (> 5 min), not worth more waiting
 
+> **Precedence when triggers and skip conditions both fire** (ordered): unreachable evidence (walled-garden / academic full text) → escalate to DR; otherwise a material coverage / discrimination gap → Round 2; otherwise skip. A time-budget cutoff yields `partial` (or `underdetermined` for Adjudication) — it does **not** imply the hypotheses were sufficiently discriminated.
+
 #### Round 2 Execution
 
-Unlike Round 1, Round 2 is **precision strike**, not broad sweep:
+Unlike Round 1, Round 2 is a **targeted pass**, not a broad sweep:
 
 - Dispatch only **1-2 workers** (not 2-3)
 - Each worker targets **one specific gap**, not a broad facet
 - Worker instructions **include Round 1's high-confidence findings as context** to avoid re-searching known information
+- **Adjudication**: design the query to **discriminate or disconfirm** a surviving hypothesis — the worker prompt says outright "find evidence **against** Hx" (a fresh worker reduces anchoring, but the prompt must still request symmetric treatment of supporting and contrary evidence)
 
-**Additional constraints for high fact-density task types:** When "hallucination tolerance = extremely low" AND "citation requirement = academic-grade", Round 2 must include at least 1 "direct primary source reading" task. → See `references/subagent-templates.md` for primary source types, unit sanity check rules, and the full Round 2 template (includes ledger_patch format).
+**Additional constraints for high fact-density task types:** When "hallucination tolerance = extremely low" AND "citation requirement = academic-grade", Round 2 must include at least 1 "direct primary source reading" task. → See `references/subagent-templates.md` for primary source types, unit sanity check rules, and the full Round 2 template (includes ledger_patch and, for Adjudication, hypothesis_patch format).
 
-> After Round 2 returns, the main session applies `ledger_patch` back to the master ledger (re-running the gate) to ensure Round 2's critical corrections enter the ledger — otherwise Step 3 Mini Assurance can't see them.
+> After Round 2 returns, the main session applies `ledger_patch` back to the master ledger (re-running the gate) to ensure Round 2's critical corrections enter the ledger — otherwise Step 3 Mini Assurance can't see them. **Adjudication mode**: Round 2 also emits `hypothesis_patch` (`update hypothesis_id=... status→...`) to update the Hypothesis Matrix; **absence of evidence ≠ refutation** — only explicit conflicting evidence or a failed predicted observation rejects a hypothesis; a failed search records an `unresolved` **Claim Ledger** entry and leaves the hypothesis status unchanged (never write `unresolved` as a hypothesis status). **Round 2 cap stays at 1 round** (no stopping rule = infinite loop).
 
 ### Step 3: Synthesis & Decision
 
@@ -184,10 +195,12 @@ After collecting all Round 1 (and Round 2, if triggered) results, evaluate next 
 #### Decision Criteria
 
 **Recon is sufficient (deliver directly):**
-- **Every topic sentence in the report maps to a `confirmed` ledger claim** (`weak`/`unresolved` excluded from topic sentences, only in "pending verification")
+- **Quality-control invariant, split by sentence type**: **fact sentences → map to one `confirmed` ledger claim** (`weak`/`unresolved` excluded from topic sentences, only in "pending verification"); **conclusion / argument sentences (Adjudication) → map to a surviving hypothesis + pass the warrant gate** — a conclusion is an argument node inferred from multiple facts via a warrant, not required to be a "confirmed fact" itself
+- **Warrant gate (load-bearing conclusions only)**: `claim / evidence IDs / warrant (reason) / qualifier / key defeater` — the audit is **not** "are there zero contradicting claims" (a preferred hypothesis may legitimately have some, and requiring zero rewards omission); a fresh reviewer verifies the evidence IDs exist with acceptable ledger status, the warrant sufficiently supports the conclusion, the qualifier matches evidence strength, and **known contrary claims / defeaters are complete and materially addressed (no unaddressed decisive contradiction after a documented countersearch)**; self-evident light conclusions don't need it
 - All central metric / license / policy / ≥10pp number claims **have owner/regulator/official/independent-level locators** (not 5 aggregate sites padding the count)
 - Remaining gaps involve only peripheral details, not affecting core judgment
 - User's need is quick-lookup or standard-report level, no walled-garden data or academic-grade citations required
+- **★ Adjudication's legitimate terminal outcomes include `underdetermined`**: when evidence can't decide, **do NOT force a single surviving hypothesis** (forcing = rejecting an un-refuted hypothesis just to fit a format = premature closure); honestly output "multiple hypotheses coexist + the conditions under which each holds + which evidence would decide between them"
 
 → Compile Recon results directly (merge Round 1 + Round 2), output research report. Jump to Step 5's "Recon direct delivery" template.
 
@@ -221,9 +234,9 @@ After collecting all Round 1 (and Round 2, if triggered) results, evaluate next 
 
 #### Fact-Check Protocol for High Fact-Density Tasks
 
-When "hallucination tolerance = extremely low + citation requirement = academic-grade", reports delivered from Recon **must undergo independent fact-checking**. The protocol uses a three-layer approach: primary source locator reading first → Perplexity Deep Research → independent worker blind-spot check, with cross-faction discipline for AI same-faction content.
+When "hallucination tolerance = extremely low + citation requirement = academic-grade", reports delivered from Recon **must undergo independent fact-checking**. The protocol uses a three-layer approach: primary source locator reading first → Perplexity Deep Research → independent worker blind-spot check, with cross-faction discipline for AI same-faction content. **For Adjudication reports, Mini Assurance also audits conclusion sentences against the Hypothesis Matrix** (are the warrant's evidence IDs valid; are known contrary claims / defeaters materially addressed) — not just fact sentences against the ledger. The reviewer receives the conclusion sentences and their warrant records as extracted inputs, not by reading the draft's conclusions section.
 
-→ See `references/fact-check-protocol.md` for the full protocol (Layer 0/1/2 flow, v2.4 cross-faction discipline, conflict arbitration order, empirical cases, and Mini Assurance audit procedure).
+→ See `references/fact-check-protocol.md` for the full protocol (Layer 0/1/2 flow, v2.4 cross-faction discipline, conflict arbitration order, empirical cases, and Mini Assurance audit procedure including the Adjudication conclusion-sentence rule).
 
 ### Step 4: Match Deep Research Platform
 
@@ -232,6 +245,8 @@ When "hallucination tolerance = extremely low + citation requirement = academic-
 Refer to `references/platform-profiles.md` for each platform's capabilities; refer to `references/matching-rules.md` for matching logic.
 
 Core approach: identify the task's 1-2 most critical requirement dimensions, match the platform strongest on those dimensions. Don't prioritize a platform because it's "free" or "cheap" — pick the most capable.
+
+**★ Adjudication mode: the DR prompt carries the Hypothesis Spine** — not "dig deeper into X," but "evidence A/B is confirmed (confirmed claims); please find evidence that **distinguishes H1/H2**" (carrying the surviving hypothesis set + each one's discriminator). When Recon was skipped there is no surviving set yet — send provisional, explicitly unverified candidates, or ask DR to construct and test them (see Step 6's no-Recon branch). This is the spine's most valuable application: spend the most expensive DR quota on discrimination rather than aimless breadth.
 
 ### Step 5: Output Research Plan
 
@@ -244,6 +259,8 @@ Based on Step 3's decision, select the corresponding output template.
 Used when Recon results sufficiently answer the user's question.
 
 **Structure compatibility**: If the task has a dedicated output structure (e.g., 6-section: TL;DR / fact table / conflict verification table / action items / pending confirmation / source annotations), **prioritize the task's structure as the main body**; Template A's "Limitations + For deeper investigation" sections serve as closing. Mixing both is reasonable and doesn't count as template deviation.
+
+> **Adjudication delivery**: lead with the defended judgment (or an honest `underdetermined` + holding conditions), back the load-bearing conclusion with a warrant gate (claim / evidence IDs / warrant / qualifier / key defeater), and summarize the Hypothesis Matrix terminal states. Do not force a single winner when evidence is insufficient.
 
 ````markdown
 ## Research Report: [Topic]
@@ -338,8 +355,9 @@ After the user brings back the DR report (possibly in a new session — **read `
 1. **Persist**: store the raw report at `<run_dir>/deep-research-raw/<platform>.md`
 2. **Gate**: extract central / high-risk claims from the DR report into ClaimCards, run them through Step 2.5's Claim Ledger Gate (same schema, risk flags, locator requirements) — DR platforms hallucinate too; "paid depth" doesn't exempt them
 3. **Reconcile**: align item-by-item against the Recon ledger; conflicts follow the existing Step 2.5 / Step 3 arbitration order (**primary source reading > source family convergence > heterogeneous reviewer**); DR conclusions **don't automatically override** Recon's existing primary-source grounding
-4. **Merge & persist**: produce `<run_dir>/final-report.md`, every topic sentence still mapping to a `confirmed` ledger claim
-5. **Skip-Recon tasks** (walled-garden / academic review, etc.): `ledger.md` starts empty — DR results directly extract ClaimCards to **initialize** the ledger (no Recon to reconcile), then go through steps 2-4, not exempt from quality control for "having skipped Recon"
+4. **★ Update hypotheses (Adjudication)**: after DR reflows, use `hypothesis_patch` to update the Hypothesis Matrix status (which hypothesis DR evidence distinguished / rejected / turned conditional, and the matrix-level outcome), not just the Claim Ledger
+5. **Merge & persist**: produce `<run_dir>/final-report.md`, fact sentences mapping to `confirmed` ledger claims and conclusion sentences mapping to surviving hypotheses + warrant gate (same split as Step 3)
+6. **Skip-Recon tasks** (walled-garden / academic review, etc.): `ledger.md` starts empty — DR results directly extract ClaimCards to **initialize** the Claim Ledger; there is no Recon ledger to reconcile against, so **skip reconciliation** and run the gate on the DR-seeded claims. **For Adjudication**, the candidates sent in Step 4 were provisional/unverified, so **form the initial Hypothesis Matrix from the gated DR evidence** (don't treat the provisional set as established), then merge. Not exempt from quality control for "having skipped Recon"
 
 > **manifest state transitions** (minimal set, not a full state machine): escalate DR → `awaiting_user_dr`; user declines paid authorization → `blocked_needs_approval`; budget/time exhausted → `partial`; final delivery → `delivered`. Update one line per transition.
 
@@ -347,7 +365,8 @@ After the user brings back the DR report (possibly in a new session — **read `
 
 ## Detailed Reference
 
+- `references/hypothesis-spine.md` — Adjudication third axis: research modes, Hypothesis Matrix schema, discrimination discipline, warrant gate
 - `references/platform-profiles.md` — Deep Research platform capability profiles
 - `references/matching-rules.md` — Platform matching logic and decision tree
-- `references/fact-check-protocol.md` — Fact-check protocol (v2.2+v2.4) + Mini Assurance audit
-- `references/subagent-templates.md` — recon worker instruction templates (Round 1 + Round 2) + unit sanity check
+- `references/fact-check-protocol.md` — Fact-check protocol (v2.2+v2.4) + Mini Assurance audit (incl. Adjudication conclusion-sentence rule)
+- `references/subagent-templates.md` — recon worker instruction templates (Round 1 + Round 2, incl. hypothesis_patch) + unit sanity check
