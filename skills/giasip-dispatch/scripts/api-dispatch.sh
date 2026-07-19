@@ -217,12 +217,16 @@ case "$PROVIDER" in
         MODEL_ID="doubao-seed-2-0-pro-260215"
         DISPLAY_NAME="豆包 Seed-2.0 Pro (字节)"
         ;;
-      minimax|minimax-m2.7|m2.7)
+      minimax|minimax-m3|m3)
         KEY_FILE="$AI_KEYS_DIR/minimax.env"
         KEY_ENV_VARS="MINIMAX_API_KEY API_KEY"
-        API_URL="https://api.minimax.io/v1/chat/completions"
-        MODEL_ID="MiniMax-M2.7"
-        DISPLAY_NAME="MiniMax M2.7"
+        # Endpoint is region-specific: api.minimaxi.com (default, works with M3) vs
+        # api.minimax.io. Override with MINIMAX_BASE_URL in the .env if your key is
+        # on a different domain (resolved after sourcing, like the aggregators).
+        BASE_URL_DEFAULT="https://api.minimaxi.com/v1"
+        BASE_URL_ENVVAR="MINIMAX_BASE_URL"
+        MODEL_ID="MiniMax-M3"
+        DISPLAY_NAME="MiniMax M3"
         ;;
       *)
         echo "[api-dispatch] direct 模式不支持的模型: $MODEL" >&2

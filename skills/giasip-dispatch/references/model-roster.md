@@ -32,7 +32,7 @@ IDs below were **live-tested** against SiliconFlow on 2026-07-19 (each returned 
 | `deepseek` | `deepseek-ai/DeepSeek-V4-Pro` | reasoner: `deepseek-ai/DeepSeek-R1` (alias `deepseek-r1`) |
 | `qwen` | `Qwen/Qwen3.6-35B-A3B` | bigger option: `Qwen/Qwen3.5-397B-A17B` |
 | `glm` | `zai-org/GLM-5.2` | |
-| `kimi` | `Pro/moonshotai/Kimi-K2.6` | needs the `Pro/` prefix |
+| `kimi` | `Pro/moonshotai/Kimi-K2.6` | needs the `Pro/` prefix; SiliconFlow's latest general Kimi (K3 not hosted here yet — the CLI/Moonshot path uses K3) |
 | `minimax` | `MiniMaxAI/MiniMax-M2.5` | |
 
 > China direct-access, no VPN. Open-source / domestic models only — no Claude / GPT / Gemini. Some models rate-limit unverified accounts (e.g. ~100 requests/day on certain DeepSeek tiers) — ID-verify to lift it, and check SiliconFlow's current Rate Limits. Intl users route via `https://api.siliconflow.com/v1` (set `SILICONFLOW_BASE_URL`).
@@ -45,7 +45,7 @@ IDs below were **live-tested** against SiliconFlow on 2026-07-19 (each returned 
 | `qwen` | Qwen3.6 Plus (Tongyi) | `dashscope.env` | 1M | dashscope.aliyuncs.com (compat mode) | Information synthesis, long document processing, structured output |
 | `glm` | GLM-5.2 (Zhipu flagship) | `zai.env` | 200K | open.bigmodel.cn | Fact-checking, low hallucination rate, claim verification |
 | `doubao` | Doubao Seed-2.0 Pro (ByteDance) | `volcengine.env` | 256K | ark.cn-beijing.volces.com | Chinese expression, writing quality |
-| `minimax` | MiniMax M2.7 | `minimax.env` | — | api.minimax.io | Programming tasks, Office document processing |
+| `minimax` | MiniMax M3 | `minimax.env` | — | api.minimaxi.com (override via `MINIMAX_BASE_URL`) | Programming tasks, Office document processing |
 
 ## CLI Models
 
@@ -53,7 +53,7 @@ IDs below were **live-tested** against SiliconFlow on 2026-07-19 (each returned 
 |-----|-------|----------|
 | Codex | GPT-5.5 (xhigh reasoning) | Code review, architecture analysis, deep reasoning |
 | Gemini | gemini-3.1-pro-preview (1M context) | Vision/PDF parsing, large context tasks, broad knowledge |
-| Kimi | K2.6 (Chinese-native thinking model) | Chinese business analysis, strategic assessment, creative writing |
+| Kimi | K3 (Chinese-native thinking model) | Chinese business analysis, strategic assessment, creative writing |
 
 ## Multi-Dispatch Lineup Recommendations
 

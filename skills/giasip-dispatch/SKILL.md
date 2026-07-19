@@ -152,7 +152,7 @@ Supported models — see `references/model-roster.md` for the full roster with p
 | `qwen` | Qwen3.6 Plus (Tongyi) | `dashscope.env` | 1M |
 | `glm` | GLM-5.2 (Zhipu flagship) | `zai.env` | 200K |
 | `doubao` | Doubao Seed-2.0 Pro (ByteDance) | `volcengine.env` | 256K |
-| `minimax` | MiniMax M2.7 | `minimax.env` | — |
+| `minimax` | MiniMax M3 | `minimax.env` | — |
 
 > Model names evolve with vendor updates — check vendor docs before calling.
 

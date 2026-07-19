@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - **JSON-injection safe**: the request body (model + prompt) is built entirely by `python -c json.dumps`; `--model-id` is no longer string-concatenated into JSON.
 - **Docs accuracy**: OpenRouter is inference-price pass-through (~5.5% only on credit top-ups), not a "~5% markup"; SiliconFlow's 100 req/day cap is per-model for unverified accounts, not a blanket limit; aggregator aliases framed as sensible current defaults (verified 2026-07-19), not guaranteed top SKU. Refreshed OpenRouter slugs to current models.
 - **Model refresh (live-verified 2026-07-19)**: every OpenRouter alias (incl. the Claude/GPT/Gemini bonuses) now returns HTTP 200 against the real API; SiliconFlow aliases live-tested; direct-vendor IDs checked against each vendor's own API — `deepseek-v4-pro` / `qwen3.6-plus` / `doubao-seed-2-0-pro` still current, GLM bumped `5.1 → 5.2`.
+- **Kimi K3 + MiniMax M3 (live-verified)**: `kimi-dispatch.sh` Moonshot default `kimi-k2.6 → kimi-k3`; CLI roster note updated (SiliconFlow aggregator alias stays `Kimi-K2.6` — K3 not yet hosted there). Direct MiniMax bumped `M2.7 → M3` and its endpoint made configurable via `MINIMAX_BASE_URL` (default `api.minimaxi.com`, which works; the old `api.minimax.io` returned 401), resolved after sourcing the `.env` like the aggregators.
 
 ## [1.6.1] — 2026-07-19
 
