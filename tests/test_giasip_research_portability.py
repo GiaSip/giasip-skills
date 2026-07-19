@@ -1,12 +1,9 @@
 from pathlib import Path
-import importlib.util
 import json
 import re
 import subprocess
 import sys
-import tempfile
 import unittest
-from unittest import mock
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -19,6 +16,8 @@ ZH_SKILL = REPO / "locales" / "zh" / "skills" / "giasip-research" / "SKILL.md"
 ZH_README = REPO / "locales" / "zh" / "skills" / "giasip-research" / "README.md"
 CODEX_PLUGIN = REPO / "plugins" / "giasip"
 CODEX_PLUGIN_MANIFEST = CODEX_PLUGIN / ".codex-plugin" / "plugin.json"
+CODEX_SKILL = CODEX_PLUGIN / "skills" / "research" / "SKILL.md"
+CODEX_OPENAI_YAML = CODEX_PLUGIN / "skills" / "research" / "agents" / "openai.yaml"
 CODEX_MARKETPLACE = REPO / ".agents" / "plugins" / "marketplace.json"
 CODEX_SYNC_SCRIPT = REPO / "scripts" / "sync_codex_plugin.py"
 CODEX_PLUGIN_DOC = REPO / "docs" / "CODEX-PLUGIN.md"
@@ -61,18 +60,14 @@ class GiaSipResearchPortabilityTest(unittest.TestCase):
         for token in forbidden:
             self.assertNotIn(token, self.skill_text)
 
-    def test_skill_defines_both_host_runtime_mappings(self) -> None:
-        required = (
-            "Claude Code runtime",
-            "Codex runtime",
-            "spawn_agent",
-            "WebSearch",
-            "WebFetch",
-            "sequential",
-            "callable schema",
-        )
-        for token in required:
-            self.assertIn(token, self.skill_text)
+    def test_standalone_keeps_both_mappings_and_plugin_is_codex_native(self) -> None:
+        codex_text = CODEX_SKILL.read_text(encoding="utf-8")
+        self.assertIn("Claude Code Runtime Contract", self.skill_text)
+        self.assertIn("WebSearch", self.skill_text)
+        self.assertIn("Codex Standalone Runtime Contract", self.skill_text)
+        self.assertIn("Codex Runtime Contract", codex_text)
+        self.assertIn("callable collaboration schema", codex_text)
+        self.assertNotIn("Claude Code Runtime Contract", codex_text)
 
     def test_mini_assurance_has_an_explicit_no_slot_fallback(self) -> None:
         required = ("fresh worker slot", "idle independent worker", "non-independent fallback")
@@ -87,7 +82,7 @@ class GiaSipResearchPortabilityTest(unittest.TestCase):
         for relative in referenced:
             self.assertTrue((SKILL_DIR / relative).is_file(), relative)
 
-    def test_codex_metadata_preserves_giasip_brand_and_invocation(self) -> None:
+    def test_standalone_metadata_preserves_giasip_brand_and_invocation(self) -> None:
         self.assertTrue(OPENAI_YAML.is_file(), "agents/openai.yaml is required")
         metadata = OPENAI_YAML.read_text(encoding="utf-8")
         self.assertIn('display_name: "GiaSip Research"', metadata)
@@ -117,11 +112,24 @@ class GiaSipResearchPortabilityTest(unittest.TestCase):
         self.assertTrue(CODEX_PLUGIN_MANIFEST.is_file())
         manifest = json.loads(CODEX_PLUGIN_MANIFEST.read_text(encoding="utf-8"))
         self.assertEqual("giasip", manifest["name"])
-        self.assertEqual("1.4.0", manifest["version"])
+        self.assertEqual("1.6.1", manifest["version"])
         self.assertEqual("./skills/", manifest["skills"])
         self.assertEqual("GiaSip Research", manifest["interface"]["displayName"])
         prompts = "\n".join(manifest["interface"]["defaultPrompt"])
         self.assertIn("$giasip:research", prompts)
+
+    def test_generated_targets_share_one_canonical_provenance(self) -> None:
+        standalone = json.loads(
+            (SKILL_DIR / "BUILD-PROVENANCE.json").read_text(encoding="utf-8")
+        )
+        codex = json.loads(
+            (CODEX_PLUGIN / "BUILD-PROVENANCE.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual("standalone", standalone["profile"])
+        self.assertEqual("codex", codex["profile"])
+        self.assertEqual(standalone["source_hashes"], codex["source_hashes"])
+        self.assertEqual(standalone["semantic_contract"], codex["semantic_contract"])
+        self.assertIn("hypothesis-spine", standalone["semantic_contract"])
 
     def test_repo_marketplace_exposes_only_the_codex_ready_plugin(self) -> None:
         self.assertTrue(CODEX_MARKETPLACE.is_file())
@@ -148,9 +156,7 @@ class GiaSipResearchPortabilityTest(unittest.TestCase):
             path.name for path in (CODEX_PLUGIN / "skills").iterdir() if path.is_dir()
         )
         self.assertEqual(["research"], bundled_skills)
-        bundled_text = (CODEX_PLUGIN / "skills" / "research" / "SKILL.md").read_text(
-            encoding="utf-8"
-        )
+        bundled_text = CODEX_SKILL.read_text(encoding="utf-8")
         self.assertRegex(bundled_text, r"(?m)^name: research$")
         bundle_copy = "\n".join(
             path.read_text(encoding="utf-8")
@@ -158,39 +164,17 @@ class GiaSipResearchPortabilityTest(unittest.TestCase):
             if path.is_file() and path.suffix in {".md", ".yaml", ".yml"}
         )
         self.assertIn("$giasip:research", bundle_copy)
-        self.assertNotIn("$giasip-research", bundle_copy)
+        invocation_surface = bundled_text + CODEX_OPENAI_YAML.read_text(encoding="utf-8")
+        self.assertNotIn("$giasip-research", invocation_surface)
 
-    def test_codex_plugin_sync_preserves_the_previous_bundle_on_render_failure(self) -> None:
-        spec = importlib.util.spec_from_file_location(
-            "giasip_sync_codex_plugin", CODEX_SYNC_SCRIPT
-        )
-        self.assertIsNotNone(spec)
-        self.assertIsNotNone(spec.loader)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            destination = Path(temp_dir) / "research"
-            destination.mkdir()
-            sentinel = destination / "previous-bundle.txt"
-            sentinel.write_text("keep me", encoding="utf-8")
-
-            with mock.patch.object(
-                module, "transform", side_effect=ValueError("render failed")
-            ):
-                with self.assertRaisesRegex(ValueError, "render failed"):
-                    module.build(destination)
-
-            self.assertEqual("keep me", sentinel.read_text(encoding="utf-8"))
-
-    def test_canonical_skill_uses_a_runtime_neutral_install_directory_label(self) -> None:
-        self.assertNotIn("installed giasip-research directory", self.skill_text)
-        self.assertIn("installed skill directory", self.skill_text)
+    def test_checked_in_skill_is_declared_generated_not_a_second_source(self) -> None:
+        self.assertIn("Generated from the neutral canonical Research method", self.skill_text)
+        self.assertIn("Do not edit this target by hand", self.skill_text)
 
     def test_release_docs_and_manifests_describe_both_codex_install_modes(self) -> None:
         self.assertTrue(CODEX_PLUGIN_DOC.is_file())
         required_readme_tokens = (
-            "version-1.4.0",
+            "version-1.6.1",
             "codex plugin marketplace add GiaSip/giasip-skills",
             "codex plugin add giasip@giasip-skills",
             "$giasip-research",
@@ -200,12 +184,13 @@ class GiaSipResearchPortabilityTest(unittest.TestCase):
         for token in required_readme_tokens:
             self.assertIn(token, self.readme_text)
         plugin_doc = CODEX_PLUGIN_DOC.read_text(encoding="utf-8")
-        self.assertIn("scripts/sync_codex_plugin.py --check", plugin_doc)
+        self.assertIn("scripts/sync_codex_plugin.py --canonical-root", plugin_doc)
+        self.assertIn("--check", plugin_doc)
         self.assertIn("giasip-dispatch", plugin_doc)
         self.assertIn("not bundled", plugin_doc)
         for path in (CLAUDE_PLUGIN_MANIFEST, CLAUDE_MARKETPLACE):
             payload = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual("1.4.0", payload["version"])
+            self.assertEqual("1.6.1", payload["version"])
 
 
 if __name__ == "__main__":

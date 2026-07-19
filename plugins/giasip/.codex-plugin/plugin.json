@@ -1,7 +1,7 @@
 {
   "name": "giasip",
-  "version": "1.6.0",
-  "description": "Evidence-gated GiaSip Research workflow for Codex.",
+  "version": "1.6.1",
+  "description": "GiaSip evidence-gated Research for Codex.",
   "author": {
     "name": "GiaSip",
     "url": "https://github.com/GiaSip"
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "GiaSip Research",
     "shortDescription": "Evidence-gated, breadth-first research for Codex.",
-    "longDescription": "Run breadth-first Quick Recon, control claims through a ledger, and escalate only unresolved gaps to external Deep Research.",
+    "longDescription": "Run breadth-first Quick Recon, control claims through a ledger and Hypothesis Spine, and escalate only unresolved gaps to external Deep Research.",
     "developerName": "GiaSip",
     "category": "Productivity",
     "capabilities": [

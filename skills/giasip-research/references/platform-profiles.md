@@ -1,6 +1,6 @@
 # Deep Research Platform Profiles
 
-> Reference for GiaSip Research (`/giasip-research` in Claude Code, `$giasip-research` in Codex) to look up each Deep Research platform's capabilities.
+> Reference for the portable Research method to look up each Deep Research platform's capabilities.
 >
 > **Matching principle: pick the strongest capability, not the lowest cost.**
 

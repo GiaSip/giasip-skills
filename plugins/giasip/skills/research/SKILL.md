@@ -1,13 +1,38 @@
 ---
 name: research
-description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, decide whether a topic needs external Deep Research, or make an evidence-backed judgment/recommendation. Supports English, Chinese, Claude Code, and Codex. Differs from generic search-and-summarize skills: central verifiable claims are captured as ClaimCards with a confidence rating and a source-family tag, the Claim Ledger gate is designed to keep unsupported claims out of conclusions, and decision/adjudication questions run a Hypothesis Spine (competing hypotheses → discriminating evidence → warrant-gated conclusion)."
+description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, decide whether a topic needs external Deep Research, or make an evidence-backed judgment or recommendation. Runs breadth-first Quick Recon, Claim Ledger gating, and an Adjudication Hypothesis Spine when needed. This generated target uses Codex native collaboration and web tools."
 ---
 
-> ✦ A **GiaSip** skill · part of the `giasip` toolkit · github.com/GiaSip
+> ✦ A **GiaSip** generated target · github.com/GiaSip/giasip-skills
 
-# GiaSip Research — Cross-Runtime Research Orchestrator
+# GiaSip Research — Codex
 
-You are a **research dispatcher**. Run a Quick Recon with the current host's native web and worker tools, map the landscape and knowledge gaps, then decide whether an external Deep Research platform is needed — and if so, generate a precisely focused prompt for it.
+> Generated from the neutral canonical Research method. Do not edit this target by hand; reconcile changes into the canonical source and rebuild.
+
+## Codex Runtime Contract
+
+Apply the compiled method directly in Codex; do not route through another
+Research skill or adapter to recover its core workflow.
+
+- Inspect the callable collaboration schema before delegating and pass only supported fields.
+- Use Codex's available public-web search and page-reading tools.
+- Use 2 lightweight workers by default and 3 only for three genuinely orthogonal slices.
+- Keep run IDs, artifact persistence, ledger mutation, synthesis, and delivery in the main task.
+- If worker concurrency is unavailable, execute the selected slices sequentially and disclose the fallback.
+
+---
+
+# Portable Research
+
+This is the only human-maintained semantic source for the Research method.
+Claude Code, Codex, and public GiaSip packages are generated host targets; do not
+copy host tool names or invocation syntax back into this file.
+
+> **Portability contract:** “worker” means the current host’s independent task primitive.
+> When parallel workers are unavailable, execute the same slices sequentially and disclose
+> the fallback. Host-native wrappers define concrete tools, persistence roots, and invocation.
+
+---
 
 ## Core Principles
 
@@ -18,40 +43,6 @@ You are a **research dispatcher**. Run a Quick Recon with the current host's nat
 5. **Numbers and citations must be verified** — All platforms can hallucinate; always remind the user to spot-check critical information
 6. **Quota awareness** — Some platforms have monthly caps (e.g., ChatGPT Plus 25/month); Recon helps you save quota for questions that genuinely need deep digging
 7. **Verification priority invariant (core)** — **Primary source / locator grounding > source family convergence > heterogeneous model cross-check**. First determine whether a claim has a ground-truth locator, then decide whether to spend on heterogeneous models. Heterogeneous reviewers **cannot substitute** for missing primary source locators (empirical: 1 model that read the primary source > 3 heterogeneous models guessing from memory). "Evidence source family" (owner/regulator/official/independent/vendor/aggregate) and "reviewer faction family" (cross-faction) are two dimensions — don't conflate them.
-
----
-
-## Runtime Adapter
-
-Apply one host mapping. Keep the research method below unchanged.
-
-### Claude Code runtime
-
-- Use Claude Code SubAgents for independent recon workers; use parallel/background execution when the host exposes it.
-- Use `WebSearch` for discovery and `WebFetch` for reading sources. Use a browser/fetch fallback only when those tools cannot read the page.
-- Keep synthesis, ledger mutation, artifact persistence, and the final answer in the main session.
-
-### Codex runtime
-
-- Inspect the current callable schema before using `spawn_agent`. Pass only fields the host actually exposes; put the slice, read-only scope, source expectations, and ClaimCard contract in the worker message.
-- Use Codex's available web search/open tools. Do not emit Claude-only tool calls or claim a model/effort override unless the host accepted it.
-- Use 2 lightweight workers by default; use 3 only when the topic naturally has three non-overlapping slices. Keep final synthesis and conflict resolution in the main thread.
-- If `spawn_agent` is unavailable or the thread limit is reached, run the slices sequentially and state that no parallel workers were used.
-
-### Shared worker contract
-
-- Workers collect evidence and return ClaimCards; the orchestrator owns run IDs, artifact persistence, ledger updates, synthesis, and delivery.
-- Treat worker completion as evidence collection, not as permission to copy its prose into the final answer without the Claim Ledger Gate.
-- Internal read-only workers do not require an extra confirmation unless the host policy or user instruction requires one. Paid external research always follows the authorization rule in Step 3.
-
-### Bundled references
-
-All reference paths are relative to this `SKILL.md` and ship inside the same installed skill directory. Read them only when the matching branch is reached:
-
-- Before dispatching Recon workers: `references/subagent-templates.md`
-- For facet-decomposition examples (Step 2) and Adjudication-mode tasks (competing hypotheses / discrimination / warrant gate): `references/hypothesis-spine.md`
-- For high-risk fact-checking or Mini Assurance: `references/fact-check-protocol.md`
-- Before recommending external Deep Research: `references/matching-rules.md` and `references/platform-profiles.md`
 
 ---
 

@@ -125,7 +125,7 @@ Receive research task
 
 Match by the most critical requirement dimension — prioritize the core need, then layer on combination strategies.
 
-If the task involves both coding + research → use the host's dispatch skill for coding/model routing and `$giasip:research` or `/giasip-research` for research.
+If the task involves both coding + research → use the host-native dispatch target for coding/model routing and the generated Research target for research.
 
 ---
 

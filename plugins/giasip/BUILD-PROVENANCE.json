@@ -1,0 +1,23 @@
+{
+  "generator": "scripts/build-research-codex-target.py",
+  "profile": "codex",
+  "semantic_contract": [
+    "run-persistence",
+    "breadth-first-facet-selection",
+    "claim-ledger-gate",
+    "hypothesis-spine",
+    "conditional-round-2",
+    "mini-assurance",
+    "deep-research-reflow"
+  ],
+  "source_hashes": {
+    "PLAYBOOK.md": "403f6625061928d140ea9cd2cb121add3ee5ae789b5d7b303f6513dd6fcfd66e",
+    "references/fact-check-protocol.md": "e636071b1dea16bbc0e9ff48ba2206505d45a721b8f4b9be98a7a9e4fcf017f3",
+    "references/hypothesis-spine.md": "7a7a888997869b54e771ff49eab107a97b025967f1802ed128baf1aca79f12b9",
+    "references/matching-rules.md": "0a6edf2e46f1425ce60df7d3a6ebd875c6b012a82ef54914fe752779f85b34bf",
+    "references/platform-profiles.md": "de6f230611713764bb4017eb63a9510fd2f585ed7f9a8e71dc86d84377f6f319",
+    "references/recon-template.md": "a0cb7608be47ac58db8981614c838fd682771c363d29ca725cd8dc31e8d80cf5",
+    "references/subagent-templates.md": "57ad9cb6e3fca444e844a3acba1e5c3560c4e3cc22930fdd6da716508eb16c17"
+  },
+  "source_root": "agent-skills/portable/research"
+}

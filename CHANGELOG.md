@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.1] — 2026-07-19
+
+### Changed
+- Reconciled the v1.6 Hypothesis Spine and the Codex-tested breadth/persistence method
+  into the neutral `agent-skills/portable/research/` canonical source.
+- `skills/giasip-research/` and `plugins/giasip/skills/research/` are now generated
+  release targets rather than separately maintained behavioral sources. The standalone
+  target keeps Claude/Codex compatibility; the Plugin target contains a Codex-native
+  runtime contract only.
+- Added canonical source hashes, semantic-invariant provenance, and byte-for-byte
+  rebuild checks for both generated targets. The old generic `$research` dispatcher is
+  retained outside this public package only as an explicit migration fallback.
+
+### Validated
+- Neutral semantic contract, generated-target sync, Python portability tests, and
+  Codex Plugin validation pass locally. An isolated Codex home discovered, installed,
+  enabled, and loaded the local v1.6.1 package with the `giasip` namespace and
+  `allow_implicit_invocation: true`. This packaging release does not claim a new
+  behavioral benchmark result beyond the earlier directional A/B evidence.
+
 ## [1.6.0] — 2026-07-18
 
 ### Added

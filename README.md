@@ -1,6 +1,6 @@
 # giasip-skills
 
-![Version](https://img.shields.io/badge/version-1.6.0-blue)
+![Version](https://img.shields.io/badge/version-1.6.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Claude Code](https://img.shields.io/badge/claude--code-compatible-orange)
 ![Codex](https://img.shields.io/badge/codex-compatible-black)
@@ -201,17 +201,19 @@ cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 ## Distribution Structure
 
 ```
-skills/giasip-research/                   # Canonical shared Research skill
+skills/giasip-research/                   # Generated standalone Claude/Codex target
 ├── SKILL.md
-├── agents/openai.yaml                    # Standalone Codex metadata
+├── BUILD-PROVENANCE.json                 # Canonical source hashes + semantic contract
+├── agents/openai.yaml                    # Standalone Agent Skills metadata
 └── references/
 
 plugins/giasip/                           # Codex Plugin package
 ├── .codex-plugin/plugin.json
-└── skills/research/                       # Generated namespaced copy
+├── BUILD-PROVENANCE.json
+└── skills/research/                       # Generated Codex-native target
 
 .agents/plugins/marketplace.json          # Repo marketplace for Codex
-scripts/sync_codex_plugin.py              # Canonical skill → plugin bundle sync/check
+scripts/sync_codex_plugin.py              # Neutral canonical → both targets sync/check
 skills/giasip-dispatch/                   # Claude Code-native dispatcher
 ```
 
@@ -274,7 +276,7 @@ Dependency check: `command -v codex gemini kimi node curl python3 jq perl`
 | `skills/giasip-research/references/subagent-templates.md` | Cross-runtime recon worker templates with ClaimCard schema |
 | `plugins/giasip/.codex-plugin/plugin.json` | Codex Plugin manifest and `giasip` component namespace |
 | `.agents/plugins/marketplace.json` | Git/repo marketplace entry used by `codex plugin marketplace add` |
-| `scripts/sync_codex_plugin.py` | Builds or checks the generated `$giasip:research` bundle from the canonical skill |
+| `scripts/sync_codex_plugin.py` | Builds/checks both generated Research targets from the neutral canonical checkout |
 | `docs/CODEX-PLUGIN.md` | Plugin architecture, installation, update, and validation guide |
 | `skills/giasip-dispatch/references/model-roster.md` | Model roster with per-model strengths and multi-dispatch lineups |
 | `skills/giasip-dispatch/scripts/dispatch-persist.mjs` | Persists dispatch responses to `~/.cache/dispatch/` (call explicitly or hook into dispatch scripts) |
@@ -282,7 +284,7 @@ Dependency check: `command -v codex gemini kimi node curl python3 jq perl`
 
 ## Chinese version
 
-A Chinese reading edition is available under [`locales/zh/`](locales/zh/). The installable behavioral source of truth remains the root `skills/giasip-research/` directory so the two runtimes cannot drift apart.
+A Chinese reading edition is available under [`locales/zh/`](locales/zh/). The installable directories in this repository are generated release artifacts; the maintained semantic source lives in the neutral `agent-skills/portable/research/` canonical layer and is recorded by source hash in each target.
 
 ## Changelog
 

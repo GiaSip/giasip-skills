@@ -1,6 +1,6 @@
 # GiaSip Codex Plugin
 
-GiaSip Research has two Codex distribution surfaces backed by one canonical workflow:
+GiaSip Research has two Codex distribution surfaces backed by one neutral canonical workflow:
 
 | Surface | Install | Invoke |
 |---|---|---|
@@ -9,9 +9,15 @@ GiaSip Research has two Codex distribution surfaces backed by one canonical work
 
 ## Architecture
 
-- `skills/giasip-research/` is the only hand-edited behavioral source of truth.
+- `agent-skills/portable/research/` in the neutral agent-system checkout is the only
+  hand-edited behavioral source of truth.
+- `skills/giasip-research/` is a generated standalone target that preserves backward
+  compatibility for Claude Code and standalone Agent Skills installs.
 - `plugins/giasip/.codex-plugin/plugin.json` defines the stable `giasip` component namespace.
-- `plugins/giasip/skills/research/` is generated from the canonical skill. Its only intentional transformations are `name: research` and `$giasip:research` invocation metadata.
+- `plugins/giasip/skills/research/` is a separately generated Codex-native target; it
+  contains only the Codex runtime contract and uses the `$giasip:research` namespace.
+- Both targets carry `BUILD-PROVENANCE.json` with identical canonical source hashes
+  and semantic invariants.
 - `.agents/plugins/marketplace.json` exposes the Plugin from this Git repository.
 - `giasip-dispatch` is **not bundled** because it remains Claude Code-native.
 
@@ -28,14 +34,16 @@ After installation, start a new Codex task and invoke `$giasip:research`.
 
 ## Maintain the generated bundle
 
-After changing the canonical Research skill, regenerate and verify the Plugin copy:
+After changing the neutral canonical Research method, regenerate and verify both targets:
 
 ```bash
-python3 scripts/sync_codex_plugin.py
-python3 scripts/sync_codex_plugin.py --check
+python3 scripts/sync_codex_plugin.py --canonical-root ~/Projects/active/agent-system
+python3 scripts/sync_codex_plugin.py --canonical-root ~/Projects/active/agent-system --check
 ```
 
-Never edit `plugins/giasip/skills/research/` directly. The sync check fails when that generated bundle diverges from `skills/giasip-research/`.
+Never edit either generated Research directory directly. Without the canonical checkout,
+`--check` still verifies that both checked-in targets share one provenance and identical
+references; with `--canonical-root`, it also performs a byte-for-byte rebuild check.
 
 ## Validate locally
 

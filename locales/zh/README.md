@@ -189,7 +189,7 @@ cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 
 **基本零外部依赖，开箱即用**——Claude Code 映射到 WebSearch / WebFetch / SubAgent，Codex 映射到当前可用的 web 工具 / `spawn_agent`。如果并发 worker 不可用，会明确改为顺序执行同一批切面，而不是静默减少覆盖面。
 
-> 本目录是中文阅读版；可安装的行为唯一真源是仓库根目录下的 `skills/giasip-research/`，以避免中英两份执行逻辑漂移。
+> 本目录是中文阅读版；仓库根目录下的 Claude/Codex 可安装目录均为生成的发行产物。唯一人工维护的语义真源是中立层 `agent-skills/portable/research/`，每个 target 用 source hash 记录来源。
 
 唯一需配置：`skills/giasip-research/references/platform-profiles.md` 里有一张「平台可用性」表，按你实际订阅的 Deep Research 平台（ChatGPT / Gemini / Perplexity / Kimi 等）填 ✅/❌，匹配逻辑会据此跳过未订阅的平台。模型阵容见 `skills/giasip-dispatch/references/model-roster.md`。
 
