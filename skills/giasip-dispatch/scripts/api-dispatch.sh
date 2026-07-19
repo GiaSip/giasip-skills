@@ -203,12 +203,12 @@ case "$PROVIDER" in
         MODEL_ID="deepseek-v4-pro"
         DISPLAY_NAME="DeepSeek V4-Pro"
         ;;
-      glm|glm-4|glm-4-plus|glm-5|glm-5.1)
+      glm|glm-4|glm-4-plus|glm-5|glm-5.1|glm-5.2)
         KEY_FILE="$AI_KEYS_DIR/zai.env"
         KEY_ENV_VARS="ZAI_API_KEY ZHIPUAI_API_KEY BIGMODEL_API_KEY API_KEY"
         API_URL="https://open.bigmodel.cn/api/paas/v4/chat/completions"
-        MODEL_ID="glm-5.1"
-        DISPLAY_NAME="GLM-5.1 (智谱)"
+        MODEL_ID="glm-5.2"
+        DISPLAY_NAME="GLM-5.2 (智谱)"
         ;;
       doubao|doubao-pro|seed|volcengine)
         KEY_FILE="$AI_KEYS_DIR/volcengine.env"

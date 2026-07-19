@@ -10,7 +10,7 @@ One aggregator key covers every model below. Set `DISPATCH_PROVIDER=openrouter` 
 
 ### OpenRouter (overseas) — `https://openrouter.ai/api/v1` · [models page](https://openrouter.ai/models)
 
-Each alias points at a **sensible current model** per vendor (confirmed present in OpenRouter's `/models` list on 2026-07-19 — not live-called, no key on hand). These are defaults for convenience, **not a promise of the absolute top SKU**; to pin an exact tier use `--model-id`.
+Each alias points at a **sensible current model** per vendor (every alias below live-tested against OpenRouter on 2026-07-19 — each returned HTTP 200). These are defaults for convenience, **not a promise of the absolute top SKU**; to pin an exact tier use `--model-id`.
 
 | Alias | Model ID | Note |
 |-------|----------|------|
@@ -43,7 +43,7 @@ IDs below were **live-tested** against SiliconFlow on 2026-07-19 (each returned 
 |-----------|-------|----------|---------|-------------|----------|
 | `deepseek` | DeepSeek V4-Pro (thinking mode on) | `deepseek.env` | 1M | api.deepseek.com | Causal chain reasoning, numerical verification, hypothesis testing |
 | `qwen` | Qwen3.6 Plus (Tongyi) | `dashscope.env` | 1M | dashscope.aliyuncs.com (compat mode) | Information synthesis, long document processing, structured output |
-| `glm` | GLM-5.1 (Zhipu flagship) | `zai.env` | 200K | open.bigmodel.cn | Fact-checking, low hallucination rate, claim verification |
+| `glm` | GLM-5.2 (Zhipu flagship) | `zai.env` | 200K | open.bigmodel.cn | Fact-checking, low hallucination rate, claim verification |
 | `doubao` | Doubao Seed-2.0 Pro (ByteDance) | `volcengine.env` | 256K | ark.cn-beijing.volces.com | Chinese expression, writing quality |
 | `minimax` | MiniMax M2.7 | `minimax.env` | — | api.minimax.io | Programming tasks, Office document processing |
 

@@ -150,7 +150,7 @@ Supported models — see `references/model-roster.md` for the full roster with p
 |-----------|-------|----------|---------|
 | `deepseek` | DeepSeek V4-Pro (thinking mode on) | `deepseek.env` | 1M |
 | `qwen` | Qwen3.6 Plus (Tongyi) | `dashscope.env` | 1M |
-| `glm` | GLM-5.1 (Zhipu flagship) | `zai.env` | 200K |
+| `glm` | GLM-5.2 (Zhipu flagship) | `zai.env` | 200K |
 | `doubao` | Doubao Seed-2.0 Pro (ByteDance) | `volcengine.env` | 256K |
 | `minimax` | MiniMax M2.7 | `minimax.env` | — |
 

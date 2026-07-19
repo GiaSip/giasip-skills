@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - **Key off the process table**: the Authorization header is fed to `curl` via a stdin config (`-K -`) and the request body via a `0600` temp file, so neither the API key nor the prompt appear in `ps`/argv. `curl` exit codes are now surfaced instead of blanket-suppressed.
 - **JSON-injection safe**: the request body (model + prompt) is built entirely by `python -c json.dumps`; `--model-id` is no longer string-concatenated into JSON.
 - **Docs accuracy**: OpenRouter is inference-price pass-through (~5.5% only on credit top-ups), not a "~5% markup"; SiliconFlow's 100 req/day cap is per-model for unverified accounts, not a blanket limit; aggregator aliases framed as sensible current defaults (verified 2026-07-19), not guaranteed top SKU. Refreshed OpenRouter slugs to current models.
+- **Model refresh (live-verified 2026-07-19)**: every OpenRouter alias (incl. the Claude/GPT/Gemini bonuses) now returns HTTP 200 against the real API; SiliconFlow aliases live-tested; direct-vendor IDs checked against each vendor's own API — `deepseek-v4-pro` / `qwen3.6-plus` / `doubao-seed-2-0-pro` still current, GLM bumped `5.1 → 5.2`.
 
 ## [1.6.1] — 2026-07-19
 
