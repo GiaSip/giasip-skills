@@ -318,7 +318,8 @@ emit_curl_config() {
   for h in "${EXTRA_HEADER_LINES[@]+"${EXTRA_HEADER_LINES[@]}"}"; do
     printf 'header = "%s"\n' "$(cfg_escape "$h")"
   done
-  printf 'data-binary = "@%s"\n' "$BODY_FILE"
+  # BODY_FILE derives from $TMPDIR (env-controlled), so escape it too.
+  printf 'data-binary = "@%s"\n' "$(cfg_escape "$BODY_FILE")"
 }
 
 set +e
