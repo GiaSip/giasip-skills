@@ -3,7 +3,7 @@
 # Handles: endpoint routing (Moonshot vs coding), CLI flags, empty output detection, API fallback, JSON parsing
 #
 # Endpoint routing:
-#   Default        → Moonshot 通用 (api.moonshot.cn/v1, model=kimi-k2.6)
+#   Default        → Moonshot 通用 (api.moonshot.cn/v1, model=kimi-k3)
 #                    特点: reasoning 可见，保留追问倾向；适合通用分析 / 综合问答
 #   KIMI_FOR_CODING=1 → kimi-for-coding (kimi CLI + api.kimi.com/coding/v1)
 #                    特点: 输出体量更大，自带 agent harness，reasoning 不可见
@@ -27,7 +27,7 @@ if [[ "${1:-}" == "--stdin" ]]; then
 else
   PROMPT="${1:?Usage: kimi-dispatch.sh \"prompt\"  |  kimi-dispatch.sh --stdin < prompt.txt}"
 fi
-TIMEOUT="${KIMI_TIMEOUT:-300}"  # kimi-k2.6 是 thinking 模型，长 prompt reasoning 阶段较慢，默认 timeout 设得较长
+TIMEOUT="${KIMI_TIMEOUT:-300}"  # kimi-k3 是 thinking 模型，长 prompt reasoning 阶段较慢，默认 timeout 设得较长
 CLI_TIMEOUT="${KIMI_CLI_TIMEOUT:-60}"  # CLI hard timeout; on expiry, fall back to API
 
 # Endpoint routing
@@ -164,16 +164,16 @@ if [[ -z "${MOONSHOT_API_KEY:-}" ]]; then
   exit 1
 fi
 
-# Moonshot 通用 K2.6 走 OpenAI 兼容格式 chat/completions（默认 streaming + 可禁 thinking）
+# Moonshot 通用 K3 走 OpenAI 兼容格式 chat/completions（默认 streaming + 可禁 thinking）
 # 设计：thinking 模型完成时间长尾不可预测 → 必须用 SSE streaming + idle guard，避免单 timeout 黑盒等待
 # ENV:
 #   KIMI_NO_THINK=1      → 注入 {"thinking":{"type":"disabled"}} 走快档（4s 级）
 #   KIMI_TIMEOUT=900     → 总 timeout hard cap（默认 900s）
 #   KIMI_IDLE_TIMEOUT=120 → idle guard，无 byte 流入 120s 才断（区分"模型还活着"vs"连接死了"）
 #   KIMI_MAX_TOKENS=16384
-#   MOONSHOT_MODEL=kimi-k2.6
+#   MOONSHOT_MODEL=kimi-k3
 
-MOONSHOT_MODEL="${MOONSHOT_MODEL:-kimi-k2.6}"
+MOONSHOT_MODEL="${MOONSHOT_MODEL:-kimi-k3}"
 MAX_TOKENS="${KIMI_MAX_TOKENS:-16384}"
 STREAM_TIMEOUT="${KIMI_TIMEOUT:-900}"    # 在 streaming 模式下，覆盖前面 line 34 的 300 默认值
 IDLE_TIMEOUT="${KIMI_IDLE_TIMEOUT:-120}"

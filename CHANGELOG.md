@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **giasip-dispatch aggregator channel (skill v1.2.0 → v1.3.0)** — lowers first-run setup from "sign up per vendor" to **one aggregator key**. `api-dispatch.sh` gains a provider layer resolved as `--via <provider>` flag > `$DISPATCH_PROVIDER` env > `direct` (default, fully backward compatible):
+  - `openrouter` (overseas) — one key reaches DeepSeek / Qwen / GLM / Kimi / MiniMax **plus** Claude / GPT / Gemini; optional attribution headers.
+  - `siliconflow` 硅基流动 (China) — one key, China-direct, DeepSeek / Qwen / GLM / Kimi / MiniMax; `SILICONFLOW_BASE_URL` override for the intl `.com` endpoint.
+  - Friendly aliases (`deepseek`/`qwen`/`glm`/`kimi`/`minimax`, plus `claude`/`gpt`/`gemini` on OpenRouter) map to per-provider model IDs; `--model-id <raw>` escape hatch passes any model verbatim.
+  - New `references/model-roster.md` alias → model-ID tables (flagged volatile), README "Easy path" setup section, and updated SKILL.md channel guidance (aggregator = pure-analysis + multi-dispatch; CLI stays for agentic write / native vision).
+  - Domestic aggregator choice: SiliconFlow over Volcengine Ark — Ark gates third-party models behind a Coding-Plan subscription and its generic API needs opaque `ep-xxx` endpoint IDs, unsuitable as an open-skill default.
+
+### Hardening (post-review, addressing a Codex audit of the change)
+- **Per-provider key isolation**: each provider now reads only its own whitelisted key variable(s), so a globally-exported `OPENROUTER_API_KEY` can no longer be picked up by a `direct` DeepSeek call (was cross-provider key leakage + a backward-compat break).
+- **Key off the process table**: the Authorization header is fed to `curl` via a stdin config (`-K -`) and the request body via a `0600` temp file, so neither the API key nor the prompt appear in `ps`/argv. `curl` exit codes are now surfaced instead of blanket-suppressed.
+- **JSON-injection safe**: the request body (model + prompt) is built entirely by `python -c json.dumps`; `--model-id` is no longer string-concatenated into JSON.
+- **Docs accuracy**: OpenRouter is inference-price pass-through (~5.5% only on credit top-ups), not a "~5% markup"; SiliconFlow's 100 req/day cap is per-model for unverified accounts, not a blanket limit; aggregator aliases framed as sensible current defaults (verified 2026-07-19), not guaranteed top SKU. Refreshed OpenRouter slugs to current models.
+- **Model refresh (live-verified 2026-07-19)**: every OpenRouter alias (incl. the Claude/GPT/Gemini bonuses) now returns HTTP 200 against the real API; SiliconFlow aliases live-tested; direct-vendor IDs checked against each vendor's own API — `deepseek-v4-pro` / `qwen3.6-plus` / `doubao-seed-2-0-pro` still current, GLM bumped `5.1 → 5.2`.
+- **Kimi K3 + MiniMax M3 (live-verified)**: `kimi-dispatch.sh` Moonshot default `kimi-k2.6 → kimi-k3`; CLI roster note updated (SiliconFlow aggregator alias stays `Kimi-K2.6` — K3 not yet hosted there). Direct MiniMax bumped `M2.7 → M3` and its endpoint made configurable via `MINIMAX_BASE_URL` (default `api.minimaxi.com`, which works; the old `api.minimax.io` returned 401), resolved after sourcing the `.env` like the aggregators.
+
 ## [1.6.1] — 2026-07-19
 
 ### Changed

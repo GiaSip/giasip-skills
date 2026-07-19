@@ -195,11 +195,30 @@ cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 
 ## giasip-dispatch — 依赖
 
-两类调用通道，按需配置：
+按需选路径。**大多数人用易用路径——一个聚合平台 key，不必逐厂商注册。**
 
-### 1. API 直调（只需 API key，最快）
+### 1. 易用路径 —— 一个聚合平台 key（推荐）
 
-支持 DeepSeek / Qwen / GLM / 豆包 / MiniMax。在 `~/.config/ai-keys/` 放对应 `.env` 文件：
+一个 key 通过 OpenAI 兼容的聚合平台调多个模型。按地区选一个，在 `~/.config/ai-keys/` 放**一个** `.env`，设一次 provider，之后所选 provider 支持的每个别名都能用。
+
+| 地区 | 平台 | 文件 | 内容 | 覆盖 |
+|------|------|------|------|------|
+| 海外 | **OpenRouter** | `openrouter.env` | `export OPENROUTER_API_KEY=...` | DeepSeek / Qwen / GLM / Kimi / MiniMax **+ Claude / GPT / Gemini** |
+| 国内 | **硅基流动** SiliconFlow | `siliconflow.env` | `export SILICONFLOW_API_KEY=...` | DeepSeek / Qwen / GLM / Kimi / MiniMax |
+
+```bash
+export DISPATCH_PROVIDER=openrouter    # 或 siliconflow
+~/.claude/skills/giasip-dispatch/scripts/api-dispatch.sh --model deepseek "你好"
+```
+
+- 申请 key：OpenRouter → <https://openrouter.ai/keys>；硅基流动 → <https://siliconflow.cn>
+- provider 解析优先级：`--via <provider>` 标志 > `$DISPATCH_PROVIDER` env > `direct`。别名表覆盖不到的模型用逃生口 `--model-id <raw>`（如 `--via openrouter --model-id anthropic/claude-3.7-sonnet`）。
+- **注意**：OpenRouter 推理价格按原价透传（不加 per-token 加价），但充值 credits 收约 5.5% 手续费、大陆需梯子；硅基流动国内直连但仅国产/开源模型（无 Claude/GPT/Gemini），部分模型对未实名账户有速率限制（如某些 DeepSeek 档约 100 请求/天，以官方 Rate Limits 为准）。国际站用户 `export SILICONFLOW_BASE_URL=https://api.siliconflow.com/v1`。
+- 聚合平台的 model ID 极易过时——别名 → model-ID 映射见 `references/model-roster.md`；调用 404 时去 models 页核对或用 `--model-id` 透传。
+
+### 2. 进阶 —— 逐厂商直连 key
+
+已有单厂商 key（或想避开聚合平台的充值手续费）时，直连各厂商。需在 `~/.config/ai-keys/` 放**每个厂商各一个** `.env`：
 
 | 模型 | 文件 | 内容 |
 |------|------|------|
@@ -213,7 +232,9 @@ cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 
 > 具体模型名（如 `deepseek-v4-pro`）写在 `api-dispatch.sh` 的 `case` 分支里，会随厂商版本更新——跑不通时去脚本里改 `MODEL_ID`。
 
-### 2. CLI 调用（需本地装并登录对应 CLI）
+### 3. CLI 调用 —— agentic 任务（需本地装并登录对应 CLI）
+
+聚合/API 路径覆盖纯分析和多派会诊。CLI 通道用于 chat API 做不到的 **agentic** 工作——Codex 写模式（改文件）、Gemini 原生 PDF/图像视觉、Kimi 的 coding harness。
 
 | 模型 | 安装 | 登录 |
 |------|------|------|

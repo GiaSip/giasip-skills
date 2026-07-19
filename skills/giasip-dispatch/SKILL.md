@@ -1,6 +1,6 @@
 ---
 name: giasip-dispatch
-version: 1.2.0
+version: 1.3.0
 description: “Multi-model dispatcher -- sends a task or prompt to other AI models (Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax) and retrieves results. Triggers when you want to run a task on a specific model, need multi-model cross-validation, or want to use a cheaper model.”
 author: GiaSip <https://github.com/GiaSip>
 license: MIT
@@ -26,15 +26,20 @@ export BASE_DIR="$HOME/.claude/skills/giasip-dispatch"
 
 Every command below references scripts as `$BASE_DIR/scripts/<script-name>`. `BASE_DIR` is a shell variable **you** set in the session — there is **no** `CLAUDE_SKILL_DIR` environment variable injected by the runtime, so set `BASE_DIR` first or the script paths will resolve to nothing.
 
-## Two Dispatch Channels
+## Dispatch Channels
 
 | Channel | Models | Prerequisite |
 |---------|--------|-------------|
-| **API direct call** (curl, fastest) | DeepSeek / Qwen / GLM / Doubao / MiniMax | Just place the corresponding `.env` in `~/.config/ai-keys/` (with API key) |
-| **CLI invocation** | Codex / Gemini / Kimi | Requires local install + login for each CLI |
+| **Aggregator API** ★ easy path — one key | Overseas: OpenRouter (DeepSeek/Qwen/GLM/Kimi/MiniMax + Claude/GPT/Gemini). China: SiliconFlow 硅基流动 (DeepSeek/Qwen/GLM/Kimi/MiniMax) | **One** key file — `openrouter.env` or `siliconflow.env` in `~/.config/ai-keys/`; set `DISPATCH_PROVIDER` once |
+| **API direct call** (curl, per-vendor) | DeepSeek / Qwen / GLM / Doubao / MiniMax | A separate `.env` **per vendor** in `~/.config/ai-keys/` (advanced) |
+| **CLI invocation** (agentic) | Codex / Gemini / Kimi | Local install + login per CLI — needed for agentic capability (code write, native vision) |
 | **Internal SubAgent** | Claude Haiku / Sonnet | Built into Claude Code, no external dependency |
 
-> For pure thinking/analysis tasks (no file I/O, no command execution, no code changes), prefer **API direct call** — roughly 10x faster than CLI. Use CLI only when the task needs agent capabilities (file system access, command execution, code changes).
+> **Easy path (recommended for most users):** grab **one** aggregator key and every alias your chosen provider supports works — no per-vendor signup. Overseas → OpenRouter; China → SiliconFlow. See README "giasip-dispatch — Dependencies" for setup.
+>
+> **When you still need the per-vendor / CLI paths:** direct per-vendor keys (if you already have them, or to avoid OpenRouter's ~5.5% credit-top-up fee); CLI channels for **agentic** work the chat API can't do — Codex write-mode (edits files), Gemini native PDF/image vision. Aggregators cover all pure-analysis + multi-dispatch use.
+>
+> For pure thinking/analysis tasks (no file I/O, no command execution, no code changes), prefer the **Aggregator / API direct** call — roughly 10x faster than CLI. Use CLI only when the task needs agent capabilities (file system access, command execution, code changes, native vision).
 
 ---
 
@@ -93,9 +98,38 @@ Visual task? (PDF catalog / scanned doc / screenshot / image parsing)
 
 ## Dispatch Methods
 
-### API Direct Call (DeepSeek / Qwen / GLM / Doubao / MiniMax)
+### Aggregator API — ★ easy path (one key, recommended)
 
-For pure analysis tasks that don't need agent capabilities, call the API directly:
+The same `api-dispatch.sh` routes through an aggregator when you set a provider. **One** key unlocks all the models below — no per-vendor signup.
+
+```bash
+# Set once per session (overseas → openrouter, China → siliconflow), then every supported alias works
+export DISPATCH_PROVIDER=openrouter        # or: siliconflow
+
+$BASE_DIR/scripts/api-dispatch.sh --model deepseek "$(cat <<'EOF'
+prompt content
+EOF
+)"
+
+# Per-call override without touching the env
+$BASE_DIR/scripts/api-dispatch.sh --via siliconflow --model kimi "prompt"
+
+# Escape hatch — pass any aggregator model ID verbatim (alias table can't cover everything)
+$BASE_DIR/scripts/api-dispatch.sh --via openrouter --model-id anthropic/claude-3.7-sonnet "prompt"
+```
+
+Provider resolution order: `--via` flag > `$DISPATCH_PROVIDER` env > `direct` (default).
+
+| Provider | Key File (`~/.config/ai-keys/`) | Aliases | Note |
+|----------|-------------------------------|---------|------|
+| `openrouter` | `openrouter.env` (`OPENROUTER_API_KEY`) | deepseek / qwen / glm / kimi / minimax / **claude / gpt / gemini** | Overseas; needs a VPN in mainland China |
+| `siliconflow` | `siliconflow.env` (`SILICONFLOW_API_KEY`) | deepseek / qwen / glm / kimi / minimax | China direct; open-source/domestic only (no Claude/GPT/Gemini). Intl users: `export SILICONFLOW_BASE_URL=https://api.siliconflow.com/v1` |
+
+> Aggregator model IDs are the volatile part — alias → model-ID maps live in `references/model-roster.md`; if a call 404s on the model, verify on the vendor's models page or pass the correct ID via `--model-id`.
+
+### API Direct Call — per-vendor (advanced, no aggregator)
+
+If you already hold per-vendor keys (or want to avoid the aggregator's credit-top-up fee), call each vendor directly. Requires a **separate** `.env` per vendor:
 
 ```bash
 $BASE_DIR/scripts/api-dispatch.sh --model <model> "$(cat <<'EOF'
@@ -116,9 +150,9 @@ Supported models — see `references/model-roster.md` for the full roster with p
 |-----------|-------|----------|---------|
 | `deepseek` | DeepSeek V4-Pro (thinking mode on) | `deepseek.env` | 1M |
 | `qwen` | Qwen3.6 Plus (Tongyi) | `dashscope.env` | 1M |
-| `glm` | GLM-5.1 (Zhipu flagship) | `zai.env` | 200K |
+| `glm` | GLM-5.2 (Zhipu flagship) | `zai.env` | 200K |
 | `doubao` | Doubao Seed-2.0 Pro (ByteDance) | `volcengine.env` | 256K |
-| `minimax` | MiniMax M2.7 | `minimax.env` | — |
+| `minimax` | MiniMax M3 | `minimax.env` | — |
 
 > Model names evolve with vendor updates — check vendor docs before calling.
 

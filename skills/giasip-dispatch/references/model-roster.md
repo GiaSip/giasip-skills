@@ -2,15 +2,50 @@
 
 > Model names and versions evolve with vendor updates. Check vendor docs before calling.
 
-## API Direct Call Models
+## Aggregator (★ easy path) — alias → model-ID maps
+
+One aggregator key covers every model below. Set `DISPATCH_PROVIDER=openrouter` (overseas) or `siliconflow` (China), then call `api-dispatch.sh --model <alias>`.
+
+> ⚠️ **These model IDs are the most perishable thing in this repo.** Aggregators rename/retire models constantly. If a call 404s on the model, look it up on the vendor's models page and either update the alias in `scripts/api-dispatch.sh` or pass the correct ID via `--model-id <raw>` (which bypasses this table entirely). Do NOT trust these strings as current without checking.
+
+### OpenRouter (overseas) — `https://openrouter.ai/api/v1` · [models page](https://openrouter.ai/models)
+
+Each alias points at a **sensible current model** per vendor (every alias below live-tested against OpenRouter on 2026-07-19 — each returned HTTP 200). These are defaults for convenience, **not a promise of the absolute top SKU**; to pin an exact tier use `--model-id`.
+
+| Alias | Model ID | Note |
+|-------|----------|------|
+| `deepseek` | `deepseek/deepseek-v3.2` | reasoner: `deepseek/deepseek-r1` (alias `deepseek-r1`) |
+| `qwen` | `qwen/qwen3.6-plus` | Tongyi |
+| `glm` | `z-ai/glm-5.2` | Zhipu |
+| `kimi` | `moonshotai/kimi-k3` | Moonshot |
+| `minimax` | `minimax/minimax-m3` | |
+| `claude` | `anthropic/claude-sonnet-5` | bonus — not reachable via the China aggregator |
+| `gpt` | `openai/gpt-5.5` | bonus |
+| `gemini` | `google/gemini-3.1-pro-preview` | bonus — also handles vision via API |
+
+### SiliconFlow 硅基流动 (China) — `https://api.siliconflow.cn/v1` · [models page](https://siliconflow.cn/models)
+
+IDs below were **live-tested** against SiliconFlow on 2026-07-19 (each returned HTTP 200). Note SiliconFlow's `Pro/` prefix on some models — the bare form 404s.
+
+| Alias | Model ID | Note |
+|-------|----------|------|
+| `deepseek` | `deepseek-ai/DeepSeek-V4-Pro` | reasoner: `deepseek-ai/DeepSeek-R1` (alias `deepseek-r1`) |
+| `qwen` | `Qwen/Qwen3.6-35B-A3B` | bigger option: `Qwen/Qwen3.5-397B-A17B` |
+| `glm` | `zai-org/GLM-5.2` | |
+| `kimi` | `Pro/moonshotai/Kimi-K2.6` | needs the `Pro/` prefix; SiliconFlow's latest general Kimi (K3 not hosted here yet — the CLI/Moonshot path uses K3) |
+| `minimax` | `MiniMaxAI/MiniMax-M2.5` | |
+
+> China direct-access, no VPN. Open-source / domestic models only — no Claude / GPT / Gemini. Some models rate-limit unverified accounts (e.g. ~100 requests/day on certain DeepSeek tiers) — ID-verify to lift it, and check SiliconFlow's current Rate Limits. Intl users route via `https://api.siliconflow.com/v1` (set `SILICONFLOW_BASE_URL`).
+
+## API Direct Call Models (per-vendor, advanced)
 
 | Parameter | Model | Key File | Context | API Endpoint | Best For |
 |-----------|-------|----------|---------|-------------|----------|
 | `deepseek` | DeepSeek V4-Pro (thinking mode on) | `deepseek.env` | 1M | api.deepseek.com | Causal chain reasoning, numerical verification, hypothesis testing |
 | `qwen` | Qwen3.6 Plus (Tongyi) | `dashscope.env` | 1M | dashscope.aliyuncs.com (compat mode) | Information synthesis, long document processing, structured output |
-| `glm` | GLM-5.1 (Zhipu flagship) | `zai.env` | 200K | open.bigmodel.cn | Fact-checking, low hallucination rate, claim verification |
+| `glm` | GLM-5.2 (Zhipu flagship) | `zai.env` | 200K | open.bigmodel.cn | Fact-checking, low hallucination rate, claim verification |
 | `doubao` | Doubao Seed-2.0 Pro (ByteDance) | `volcengine.env` | 256K | ark.cn-beijing.volces.com | Chinese expression, writing quality |
-| `minimax` | MiniMax M2.7 | `minimax.env` | — | api.minimax.io | Programming tasks, Office document processing |
+| `minimax` | MiniMax M3 | `minimax.env` | — | api.minimaxi.com (override via `MINIMAX_BASE_URL`) | Programming tasks, Office document processing |
 
 ## CLI Models
 
@@ -18,7 +53,7 @@
 |-----|-------|----------|
 | Codex | GPT-5.5 (xhigh reasoning) | Code review, architecture analysis, deep reasoning |
 | Gemini | gemini-3.1-pro-preview (1M context) | Vision/PDF parsing, large context tasks, broad knowledge |
-| Kimi | K2.6 (Chinese-native thinking model) | Chinese business analysis, strategic assessment, creative writing |
+| Kimi | K3 (Chinese-native thinking model) | Chinese business analysis, strategic assessment, creative writing |
 
 ## Multi-Dispatch Lineup Recommendations
 
