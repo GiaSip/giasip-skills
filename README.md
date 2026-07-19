@@ -231,7 +231,7 @@ Pick the path that fits. **Most users want the easy path — one aggregator key,
 
 ### 1. Easy path — one aggregator key (recommended)
 
-One key routes to many models through an OpenAI-compatible aggregator. Choose by region, drop **one** `.env` in `~/.config/ai-keys/`, set the provider once, and every `--model` call just works.
+One key routes to many models through an OpenAI-compatible aggregator. Choose by region, drop **one** `.env` in `~/.config/ai-keys/`, set the provider once, and every alias your chosen provider supports just works.
 
 | Region | Provider | File | Content | Covers |
 |--------|----------|------|---------|--------|
@@ -245,12 +245,12 @@ export DISPATCH_PROVIDER=openrouter    # or: siliconflow
 
 - Get a key: OpenRouter → <https://openrouter.ai/keys> · SiliconFlow → <https://siliconflow.cn>
 - Provider resolution: `--via <provider>` flag > `$DISPATCH_PROVIDER` env > `direct`. Escape hatch for any model the alias table misses: `--model-id <raw>` (e.g. `--via openrouter --model-id anthropic/claude-3.7-sonnet`).
-- **Caveats:** OpenRouter needs a VPN in mainland China and adds a ~5% markup. SiliconFlow is China-direct but open-source/domestic only (no Claude/GPT/Gemini), and unverified accounts are capped at 100 calls/day. Intl users route SiliconFlow via `export SILICONFLOW_BASE_URL=https://api.siliconflow.com/v1`.
+- **Caveats:** OpenRouter passes model inference pricing through at parity (no per-token markup) but takes ~5.5% on credit top-ups, and needs a VPN in mainland China. SiliconFlow is China-direct but open-source/domestic only (no Claude/GPT/Gemini); some models rate-limit unverified accounts (e.g. ~100 requests/day on certain DeepSeek tiers) — check its current Rate Limits. Intl users route SiliconFlow via `export SILICONFLOW_BASE_URL=https://api.siliconflow.com/v1`.
 - Aggregator model IDs go stale fast — the alias → model-ID maps live in `references/model-roster.md`; if a call 404s, verify on the vendor's models page or pass `--model-id`.
 
 ### 2. Advanced — per-vendor direct keys
 
-If you already hold per-vendor keys (or want to skip the aggregator markup), call each vendor directly. This needs a **separate** `.env` **per vendor** in `~/.config/ai-keys/`:
+If you already hold per-vendor keys (or want to avoid the aggregator's credit-top-up fee), call each vendor directly. This needs a **separate** `.env` **per vendor** in `~/.config/ai-keys/`:
 
 | Model | File | Content |
 |-------|------|---------|

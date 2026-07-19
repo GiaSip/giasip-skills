@@ -199,7 +199,7 @@ cp -R giasip-skills/skills/giasip-research ~/.agents/skills/giasip-research
 
 ### 1. 易用路径 —— 一个聚合平台 key（推荐）
 
-一个 key 通过 OpenAI 兼容的聚合平台调多个模型。按地区选一个，在 `~/.config/ai-keys/` 放**一个** `.env`，设一次 provider，之后每个 `--model` 调用都能用。
+一个 key 通过 OpenAI 兼容的聚合平台调多个模型。按地区选一个，在 `~/.config/ai-keys/` 放**一个** `.env`，设一次 provider，之后所选 provider 支持的每个别名都能用。
 
 | 地区 | 平台 | 文件 | 内容 | 覆盖 |
 |------|------|------|------|------|
@@ -213,12 +213,12 @@ export DISPATCH_PROVIDER=openrouter    # 或 siliconflow
 
 - 申请 key：OpenRouter → <https://openrouter.ai/keys>；硅基流动 → <https://siliconflow.cn>
 - provider 解析优先级：`--via <provider>` 标志 > `$DISPATCH_PROVIDER` env > `direct`。别名表覆盖不到的模型用逃生口 `--model-id <raw>`（如 `--via openrouter --model-id anthropic/claude-3.7-sonnet`）。
-- **注意**：OpenRouter 大陆需梯子、约 5% 加价；硅基流动国内直连但仅国产/开源模型（无 Claude/GPT/Gemini），未实名限 100 次/天。国际站用户 `export SILICONFLOW_BASE_URL=https://api.siliconflow.com/v1`。
+- **注意**：OpenRouter 推理价格按原价透传（不加 per-token 加价），但充值 credits 收约 5.5% 手续费、大陆需梯子；硅基流动国内直连但仅国产/开源模型（无 Claude/GPT/Gemini），部分模型对未实名账户有速率限制（如某些 DeepSeek 档约 100 请求/天，以官方 Rate Limits 为准）。国际站用户 `export SILICONFLOW_BASE_URL=https://api.siliconflow.com/v1`。
 - 聚合平台的 model ID 极易过时——别名 → model-ID 映射见 `references/model-roster.md`；调用 404 时去 models 页核对或用 `--model-id` 透传。
 
 ### 2. 进阶 —— 逐厂商直连 key
 
-已有单厂商 key（或想省掉聚合加价）时，直连各厂商。需在 `~/.config/ai-keys/` 放**每个厂商各一个** `.env`：
+已有单厂商 key（或想避开聚合平台的充值手续费）时，直连各厂商。需在 `~/.config/ai-keys/` 放**每个厂商各一个** `.env`：
 
 | 模型 | 文件 | 内容 |
 |------|------|------|

@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
   - New `references/model-roster.md` alias → model-ID tables (flagged volatile), README "Easy path" setup section, and updated SKILL.md channel guidance (aggregator = pure-analysis + multi-dispatch; CLI stays for agentic write / native vision).
   - Domestic aggregator choice: SiliconFlow over Volcengine Ark — Ark gates third-party models behind a Coding-Plan subscription and its generic API needs opaque `ep-xxx` endpoint IDs, unsuitable as an open-skill default.
 
+### Hardening (post-review, addressing a Codex audit of the change)
+- **Per-provider key isolation**: each provider now reads only its own whitelisted key variable(s), so a globally-exported `OPENROUTER_API_KEY` can no longer be picked up by a `direct` DeepSeek call (was cross-provider key leakage + a backward-compat break).
+- **Key off the process table**: the Authorization header is fed to `curl` via a stdin config (`-K -`) and the request body via a `0600` temp file, so neither the API key nor the prompt appear in `ps`/argv. `curl` exit codes are now surfaced instead of blanket-suppressed.
+- **JSON-injection safe**: the request body (model + prompt) is built entirely by `python -c json.dumps`; `--model-id` is no longer string-concatenated into JSON.
+- **Docs accuracy**: OpenRouter is inference-price pass-through (~5.5% only on credit top-ups), not a "~5% markup"; SiliconFlow's 100 req/day cap is per-model for unverified accounts, not a blanket limit; aggregator aliases framed as sensible current defaults (verified 2026-07-19), not guaranteed top SKU. Refreshed OpenRouter slugs to current models.
+
 ## [1.6.1] — 2026-07-19
 
 ### Changed

@@ -35,9 +35,9 @@ Every command below references scripts as `$BASE_DIR/scripts/<script-name>`. `BA
 | **CLI invocation** (agentic) | Codex / Gemini / Kimi | Local install + login per CLI — needed for agentic capability (code write, native vision) |
 | **Internal SubAgent** | Claude Haiku / Sonnet | Built into Claude Code, no external dependency |
 
-> **Easy path (recommended for most users):** grab **one** aggregator key and every `--model` call works — no per-vendor signup. Overseas → OpenRouter; China → SiliconFlow. See README "giasip-dispatch — Dependencies" for setup.
+> **Easy path (recommended for most users):** grab **one** aggregator key and every alias your chosen provider supports works — no per-vendor signup. Overseas → OpenRouter; China → SiliconFlow. See README "giasip-dispatch — Dependencies" for setup.
 >
-> **When you still need the per-vendor / CLI paths:** direct per-vendor keys (if you already have them or want to avoid the aggregator's ~5% markup); CLI channels for **agentic** work the chat API can't do — Codex write-mode (edits files), Gemini native PDF/image vision. Aggregators cover all pure-analysis + multi-dispatch use.
+> **When you still need the per-vendor / CLI paths:** direct per-vendor keys (if you already have them, or to avoid OpenRouter's ~5.5% credit-top-up fee); CLI channels for **agentic** work the chat API can't do — Codex write-mode (edits files), Gemini native PDF/image vision. Aggregators cover all pure-analysis + multi-dispatch use.
 >
 > For pure thinking/analysis tasks (no file I/O, no command execution, no code changes), prefer the **Aggregator / API direct** call — roughly 10x faster than CLI. Use CLI only when the task needs agent capabilities (file system access, command execution, code changes, native vision).
 
@@ -103,7 +103,7 @@ Visual task? (PDF catalog / scanned doc / screenshot / image parsing)
 The same `api-dispatch.sh` routes through an aggregator when you set a provider. **One** key unlocks all the models below — no per-vendor signup.
 
 ```bash
-# Set once per session (overseas → openrouter, China → siliconflow), then every --model works
+# Set once per session (overseas → openrouter, China → siliconflow), then every supported alias works
 export DISPATCH_PROVIDER=openrouter        # or: siliconflow
 
 $BASE_DIR/scripts/api-dispatch.sh --model deepseek "$(cat <<'EOF'
@@ -129,7 +129,7 @@ Provider resolution order: `--via` flag > `$DISPATCH_PROVIDER` env > `direct` (d
 
 ### API Direct Call — per-vendor (advanced, no aggregator)
 
-If you already hold per-vendor keys (or want to skip the aggregator markup), call each vendor directly. Requires a **separate** `.env` per vendor:
+If you already hold per-vendor keys (or want to avoid the aggregator's credit-top-up fee), call each vendor directly. Requires a **separate** `.env` per vendor:
 
 ```bash
 $BASE_DIR/scripts/api-dispatch.sh --model <model> "$(cat <<'EOF'

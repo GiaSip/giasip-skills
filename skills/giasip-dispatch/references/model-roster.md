@@ -10,15 +10,15 @@ One aggregator key covers every model below. Set `DISPATCH_PROVIDER=openrouter` 
 
 ### OpenRouter (overseas) — `https://openrouter.ai/api/v1` · [models page](https://openrouter.ai/models)
 
-Slugs below were confirmed present in OpenRouter's `/models` list on 2026-07-19 (not live-called — no key on hand).
+Each alias points at a **sensible current model** per vendor (confirmed present in OpenRouter's `/models` list on 2026-07-19 — not live-called, no key on hand). These are defaults for convenience, **not a promise of the absolute top SKU**; to pin an exact tier use `--model-id`.
 
 | Alias | Model ID | Note |
 |-------|----------|------|
-| `deepseek` | `deepseek/deepseek-chat` | reasoner: `deepseek/deepseek-r1` (alias `deepseek-r1`) |
-| `qwen` | `qwen/qwen3-235b-a22b` | Tongyi flagship |
-| `glm` | `z-ai/glm-4.6` | Zhipu |
-| `kimi` | `moonshotai/kimi-k2.6` | Moonshot |
-| `minimax` | `minimax/minimax-m2.5` | |
+| `deepseek` | `deepseek/deepseek-v3.2` | reasoner: `deepseek/deepseek-r1` (alias `deepseek-r1`) |
+| `qwen` | `qwen/qwen3.6-plus` | Tongyi |
+| `glm` | `z-ai/glm-5.2` | Zhipu |
+| `kimi` | `moonshotai/kimi-k3` | Moonshot |
+| `minimax` | `minimax/minimax-m3` | |
 | `claude` | `anthropic/claude-sonnet-5` | bonus — not reachable via the China aggregator |
 | `gpt` | `openai/gpt-5.5` | bonus |
 | `gemini` | `google/gemini-3.1-pro-preview` | bonus — also handles vision via API |
@@ -35,7 +35,7 @@ IDs below were **live-tested** against SiliconFlow on 2026-07-19 (each returned 
 | `kimi` | `Pro/moonshotai/Kimi-K2.6` | needs the `Pro/` prefix |
 | `minimax` | `MiniMaxAI/MiniMax-M2.5` | |
 
-> China direct-access, no VPN. Open-source / domestic models only — no Claude / GPT / Gemini. Unverified accounts are capped at 100 calls/day; ID-verify to lift it. Intl users route via `https://api.siliconflow.com/v1` (set `SILICONFLOW_BASE_URL`).
+> China direct-access, no VPN. Open-source / domestic models only — no Claude / GPT / Gemini. Some models rate-limit unverified accounts (e.g. ~100 requests/day on certain DeepSeek tiers) — ID-verify to lift it, and check SiliconFlow's current Rate Limits. Intl users route via `https://api.siliconflow.com/v1` (set `SILICONFLOW_BASE_URL`).
 
 ## API Direct Call Models (per-vendor, advanced)
 
