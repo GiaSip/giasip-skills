@@ -32,7 +32,8 @@
 #
 # 安全说明：
 #   - 每个 provider 只读取自己白名单内的 key 变量（KEY_ENV_VARS），不会误取环境里其它 provider 的 key。
-#   - API key 通过 `curl -K -`（config 走 stdin）传入，绝不出现在进程 argv（`ps` 看不到）。
+#   - API key 通过 `curl -K -`（config 走 stdin）传入，不出现在进程 argv。config 里的值都经 cfg_escape 转义，避免注入额外 curl 选项。
+#   - 注意：若 .env 用 `export` 导出 key，它仍在进程环境里，同用户可经 `ps e` / /proc/<pid>/environ 看到；不想暴露就在 .env 里去掉 `export`（脚本用 ${!var} 读取，不依赖 export）。
 #   - prompt/body 写入仅本人可读（0600）临时文件，退出即删。
 #   - `.env` 会被 source（等于执行文件内 shell），务必只指向你自己创建的文件，别 source 来历不明的内容。
 #
@@ -287,24 +288,35 @@ if [[ -z "$PAYLOAD" ]]; then
   exit 1
 fi
 
-# --- Temp files (0600, auto-removed) for the request body + curl stderr ---
+# --- Temp files (0600, auto-removed) for the request body + curl stderr.
+#     Register the cleanup trap BEFORE creating them, so if the second mktemp
+#     fails the first file is still removed. ---
+BODY_FILE=""
+ERR_FILE=""
+trap 'rm -f "$BODY_FILE" "$ERR_FILE"' EXIT
 BODY_FILE="$(mktemp "${TMPDIR:-/tmp}/apidispatch.XXXXXX")"
 ERR_FILE="$(mktemp "${TMPDIR:-/tmp}/apidispatch.XXXXXX")"
-trap 'rm -f "$BODY_FILE" "$ERR_FILE"' EXIT
 chmod 600 "$BODY_FILE" "$ERR_FILE"
 printf '%s' "$PAYLOAD" > "$BODY_FILE"
 
 echo "[api-dispatch] 正在调用 $DISPLAY_NAME ($MODEL_ID)..." >&2
 
+# Escape a value for a curl-config double-quoted field: backslash + double-quote,
+# and drop CR/LF — so a key / URL / header value can't break out of its quotes
+# and inject an extra curl option (e.g. a second url/proxy/output line).
+cfg_escape() {
+  printf '%s' "$1" | tr -d '\r\n' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
+
 # --- Call API. The config (incl. Authorization: Bearer <key>) is fed to curl via
-#     stdin (-K -), so the key never appears in argv / `ps` / shell history. ---
+#     stdin (-K -), so the key never appears in argv. ---
 emit_curl_config() {
-  printf 'url = "%s"\n' "$API_URL"
+  printf 'url = "%s"\n' "$(cfg_escape "$API_URL")"
   printf 'header = "Content-Type: application/json"\n'
-  printf 'header = "Authorization: Bearer %s"\n' "$API_KEY"
+  printf 'header = "Authorization: Bearer %s"\n' "$(cfg_escape "$API_KEY")"
   local h
   for h in "${EXTRA_HEADER_LINES[@]+"${EXTRA_HEADER_LINES[@]}"}"; do
-    printf 'header = "%s"\n' "$h"
+    printf 'header = "%s"\n' "$(cfg_escape "$h")"
   done
   printf 'data-binary = "@%s"\n' "$BODY_FILE"
 }
