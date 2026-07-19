@@ -12,7 +12,7 @@
 | Skill | What it gives you |
 |-------|-------------------|
 | **giasip-research** | A research orchestrator that grounds every claim in evidence. It runs a breadth-first Quick Recon with your host's native workers and web tools, records each finding as a **ClaimCard** (confidence + source family + "what the source said vs. what I inferred"), passes them through a **Claim Ledger Gate** that bars unsupported claims from your conclusions, and escalates to a paid Deep Research platform only when the task needs it — asking before it spends, then re-gating whatever the paid run returns instead of trusting it. Runs persist to disk, so a long research task resumes across sessions. An independent fact-check protocol and a fresh-reviewer audit (on by default for direct-delivery research) keep it honest. For decision / adjudication tasks ("should we A or B," "why Y") it engages a **Hypothesis Spine** — competing hypotheses (incl. a null) → a second round that hunts for counter-evidence → a warrant-gated or honestly `underdetermined` conclusion, instead of piling up facts. |
-| **giasip-dispatch** | A multi-model dispatcher — sends a task or prompt to other AI models (Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax) and retrieves results. Includes complexity-routing guidelines (API vs CLI vs SubAgent, single vs multi), but the final model choice is left to your agent's judgment. |
+| **giasip-dispatch** | A multi-model dispatcher — sends a task or prompt to other AI models (Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax) and retrieves results. **Start with one aggregator key** (OpenRouter overseas / SiliconFlow in China) instead of signing up per vendor. Includes complexity-routing guidelines (API vs CLI vs SubAgent, single vs multi), but the final model choice is left to your agent's judgment. |
 
 ---
 
@@ -227,11 +227,30 @@ The only setup needed: fill in the platform availability table in `skills/giasip
 
 ## giasip-dispatch — Dependencies
 
-Two types of dispatch channels; configure what you need:
+Pick the path that fits. **Most users want the easy path — one aggregator key, no per-vendor signup.**
 
-### 1. API direct call (just needs an API key — fastest)
+### 1. Easy path — one aggregator key (recommended)
 
-Supports DeepSeek / Qwen / GLM / Doubao / MiniMax. Place the corresponding `.env` file in `~/.config/ai-keys/`:
+One key routes to many models through an OpenAI-compatible aggregator. Choose by region, drop **one** `.env` in `~/.config/ai-keys/`, set the provider once, and every `--model` call just works.
+
+| Region | Provider | File | Content | Covers |
+|--------|----------|------|---------|--------|
+| Overseas | **OpenRouter** | `openrouter.env` | `export OPENROUTER_API_KEY=...` | DeepSeek / Qwen / GLM / Kimi / MiniMax **+ Claude / GPT / Gemini** |
+| China | **SiliconFlow** 硅基流动 | `siliconflow.env` | `export SILICONFLOW_API_KEY=...` | DeepSeek / Qwen / GLM / Kimi / MiniMax |
+
+```bash
+export DISPATCH_PROVIDER=openrouter    # or: siliconflow
+~/.claude/skills/giasip-dispatch/scripts/api-dispatch.sh --model deepseek "Hello"
+```
+
+- Get a key: OpenRouter → <https://openrouter.ai/keys> · SiliconFlow → <https://siliconflow.cn>
+- Provider resolution: `--via <provider>` flag > `$DISPATCH_PROVIDER` env > `direct`. Escape hatch for any model the alias table misses: `--model-id <raw>` (e.g. `--via openrouter --model-id anthropic/claude-3.7-sonnet`).
+- **Caveats:** OpenRouter needs a VPN in mainland China and adds a ~5% markup. SiliconFlow is China-direct but open-source/domestic only (no Claude/GPT/Gemini), and unverified accounts are capped at 100 calls/day. Intl users route SiliconFlow via `export SILICONFLOW_BASE_URL=https://api.siliconflow.com/v1`.
+- Aggregator model IDs go stale fast — the alias → model-ID maps live in `references/model-roster.md`; if a call 404s, verify on the vendor's models page or pass `--model-id`.
+
+### 2. Advanced — per-vendor direct keys
+
+If you already hold per-vendor keys (or want to skip the aggregator markup), call each vendor directly. This needs a **separate** `.env` **per vendor** in `~/.config/ai-keys/`:
 
 | Model | File | Content |
 |-------|------|---------|
@@ -245,7 +264,9 @@ Test (adjust the path to your install location — e.g. a global install): `~/.c
 
 > Specific model names (e.g., `deepseek-v4-pro`) are defined in the `case` branches of `api-dispatch.sh` and may change as vendors release new versions — update `MODEL_ID` in the script if a call fails. See `references/model-roster.md` for the current roster.
 
-### 2. CLI invocation (requires local install + login)
+### 3. CLI invocation — agentic tasks (requires local install + login)
+
+The aggregator/API paths cover pure analysis and multi-dispatch. CLI channels are for **agentic** work a chat API can't do — Codex write-mode (edits files), Gemini native PDF/image vision, Kimi's coding harness.
 
 | Model | Install | Auth |
 |-------|---------|------|

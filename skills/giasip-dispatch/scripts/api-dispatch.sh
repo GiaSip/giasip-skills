@@ -1,17 +1,42 @@
 #!/usr/bin/env bash
-# api-dispatch.sh — API 直调派遣脚本（DeepSeek/Qwen/GLM/豆包/MiniMax）
+# api-dispatch.sh — API 直调派遣脚本
+# 两种 provider 模式：
+#   direct     （默认）— 逐厂商直连：DeepSeek/Qwen/GLM/豆包/MiniMax，各自一个 .env + key
+#   openrouter — 海外聚合平台，一个 key 调多模型（含 Claude/GPT/Gemini/Kimi 等）
+#   siliconflow— 国内聚合平台（硅基流动），一个 key 调 DeepSeek/Qwen/GLM/Kimi/MiniMax
 # 用于无 CLI Agent 的模型，通过 OpenAI 兼容 API 直接调用完成纯分析任务
 # 比 CLI Agent 快 10 倍——无启动开销，直接发请求收回答
 #
 # Usage:
+#   # 逐厂商直调（默认，向后兼容）
 #   api-dispatch.sh --model <qwen|deepseek|glm|doubao|minimax> "prompt"
+#
+#   # 聚合平台易用路径（一个 key）——设一次 env，全局生效
+#   export DISPATCH_PROVIDER=openrouter   # 或 siliconflow
+#   api-dispatch.sh --model deepseek "prompt"
+#
+#   # 单次覆盖 provider
+#   api-dispatch.sh --via siliconflow --model kimi "prompt"
+#
+#   # 逃生口：透传任意聚合平台 model ID（别名表覆盖不到时）
+#   api-dispatch.sh --via openrouter --model-id anthropic/claude-3.7-sonnet "prompt"
+#
 #   echo "长文本" | api-dispatch.sh --model <model> --stdin
+#
+# Provider 解析优先级：--via 标志 > $DISPATCH_PROVIDER env > direct（默认）
+#
+# Key 文件（放 ~/.config/ai-keys/）：
+#   direct:      deepseek.env / dashscope.env / zai.env / volcengine.env / minimax.env
+#   openrouter:  openrouter.env   (export OPENROUTER_API_KEY=...)
+#   siliconflow: siliconflow.env  (export SILICONFLOW_API_KEY=...)
 #
 # Exit: 0 = success (output on stdout), 1 = failed (error on stderr)
 
 set -euo pipefail
 
 MODEL=""
+MODEL_ID_OVERRIDE=""
+PROVIDER_OVERRIDE=""
 PROMPT=""
 USE_STDIN=false
 TIMEOUT_OVERRIDE=""
@@ -19,18 +44,37 @@ TIMEOUT_OVERRIDE=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --model|-m) MODEL="$2"; shift 2 ;;
+    --model-id) MODEL_ID_OVERRIDE="$2"; shift 2 ;;
+    --via|--provider) PROVIDER_OVERRIDE="$2"; shift 2 ;;
     --timeout|-t) TIMEOUT_OVERRIDE="$2"; shift 2 ;;
     --stdin) USE_STDIN=true; shift ;;
     --help|-h)
-      echo "Usage: api-dispatch.sh --model <qwen|deepseek|glm|doubao|minimax> \"prompt\""
-      echo "       echo \"prompt\" | api-dispatch.sh --model <model> --stdin"
-      echo ""
-      echo "Models:"
-      echo "  qwen      Qwen3.6 Plus (阿里通义) — 信息整合/长文档/图表"
-      echo "  deepseek  DeepSeek V4-Pro 思考模式 — 拆逻辑/假设验证（1M ctx）"
-      echo "  glm       GLM-5.1 (智谱旗舰)    — 事实核查/低幻觉"
-      echo "  doubao    豆包 Seed-2.0 Pro      — 中文表达/写作润色"
-      echo "  minimax   MiniMax M2.7           — 编程/Office文档"
+      cat <<'HELP'
+Usage:
+  api-dispatch.sh --model <alias> "prompt"
+  echo "prompt" | api-dispatch.sh --model <alias> --stdin
+
+Provider (resolve order: --via > $DISPATCH_PROVIDER > direct):
+  direct       Per-vendor direct call (default). Aliases: qwen|deepseek|glm|doubao|minimax
+  openrouter   Overseas aggregator, one key. Aliases: deepseek|qwen|glm|kimi|minimax|claude|gpt|gemini
+  siliconflow  China aggregator (SiliconFlow), one key. Aliases: deepseek|qwen|glm|kimi|minimax
+
+Flags:
+  --via <provider>     Override provider for this call (openrouter|siliconflow|direct)
+  --model-id <raw>     Pass a raw aggregator model ID verbatim (bypasses the alias table)
+  --timeout <sec>      Per-call timeout (default 180)
+  --stdin              Read prompt from stdin
+
+Direct-mode aliases:
+  qwen      Qwen3.6 Plus (阿里通义) — 信息整合/长文档/图表
+  deepseek  DeepSeek V4-Pro 思考模式 — 拆逻辑/假设验证（1M ctx）
+  glm       GLM-5.1 (智谱旗舰)    — 事实核查/低幻觉
+  doubao    豆包 Seed-2.0 Pro      — 中文表达/写作润色
+  minimax   MiniMax M2.7           — 编程/Office文档
+
+Aggregator model IDs go stale — verify on the vendor's models page, or use --model-id.
+See references/model-roster.md for the current alias → model-ID tables.
+HELP
       exit 0
       ;;
     *) PROMPT="$1"; shift ;;
@@ -42,49 +86,138 @@ if $USE_STDIN; then
   PROMPT=$(cat)
 fi
 
-if [[ -z "$MODEL" || -z "$PROMPT" ]]; then
-  echo "Usage: api-dispatch.sh --model <qwen|deepseek|glm|doubao|minimax> \"prompt\"" >&2
+if [[ -z "$PROMPT" ]]; then
+  echo "Usage: api-dispatch.sh --model <alias> \"prompt\"  (see --help)" >&2
   exit 1
 fi
 
 TIMEOUT="${TIMEOUT_OVERRIDE:-${API_TIMEOUT:-180}}"
 AI_KEYS_DIR="$HOME/.config/ai-keys"
 
-# --- Model configurations ---
-case "$MODEL" in
-  qwen|qwen-max|qwen-plus|qwen3.5|qwen3.6)
-    KEY_FILE="$AI_KEYS_DIR/dashscope.env"
-    API_URL="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
-    MODEL_ID="qwen3.6-plus"
-    DISPLAY_NAME="Qwen3.6 Plus (通义千问)"
+# --- Resolve provider: --via flag > DISPATCH_PROVIDER env > direct ---
+PROVIDER="${PROVIDER_OVERRIDE:-${DISPATCH_PROVIDER:-direct}}"
+
+# EXTRA_HEADERS holds provider-specific curl headers (e.g. OpenRouter attribution).
+# BASE_URL_* let aggregator endpoints be overridden by a *.env-defined var (resolved
+# AFTER sourcing the key file, so putting SILICONFLOW_BASE_URL in the .env works).
+EXTRA_HEADERS=()
+BASE_URL_ENVVAR=""
+BASE_URL_DEFAULT=""
+
+case "$PROVIDER" in
+  # =========================================================================
+  # AGGREGATOR: OpenRouter (overseas) — one key, many vendors incl. Claude/GPT/Gemini
+  # =========================================================================
+  openrouter)
+    KEY_FILE="$AI_KEYS_DIR/openrouter.env"
+    BASE_URL_DEFAULT="https://openrouter.ai/api/v1"
+    BASE_URL_ENVVAR="OPENROUTER_BASE_URL"
+    DISPLAY_NAME="OpenRouter"
+    # Optional attribution headers (OpenRouter-recommended, harmless if unset)
+    EXTRA_HEADERS+=(-H "HTTP-Referer: ${OPENROUTER_REFERER:-https://github.com/GiaSip/giasip-skills}")
+    EXTRA_HEADERS+=(-H "X-Title: ${OPENROUTER_TITLE:-giasip-dispatch}")
+    if [[ -n "$MODEL_ID_OVERRIDE" ]]; then
+      MODEL_ID="$MODEL_ID_OVERRIDE"
+    else
+      # alias → OpenRouter model ID (VOLATILE — slugs verified present 2026-07-19; check https://openrouter.ai/models)
+      case "$MODEL" in
+        deepseek) MODEL_ID="deepseek/deepseek-chat" ;;
+        deepseek-r1|reasoner) MODEL_ID="deepseek/deepseek-r1" ;;
+        qwen)     MODEL_ID="qwen/qwen3-235b-a22b" ;;
+        glm)      MODEL_ID="z-ai/glm-4.6" ;;
+        kimi)     MODEL_ID="moonshotai/kimi-k2.6" ;;
+        minimax)  MODEL_ID="minimax/minimax-m2.5" ;;
+        claude)   MODEL_ID="anthropic/claude-sonnet-5" ;;
+        gpt)      MODEL_ID="openai/gpt-5.5" ;;
+        gemini)   MODEL_ID="google/gemini-3.1-pro-preview" ;;
+        *)
+          echo "[api-dispatch] OpenRouter 别名表无 '$MODEL'。" >&2
+          echo "[api-dispatch] 用 --model-id <raw> 透传，或查 https://openrouter.ai/models" >&2
+          exit 1
+          ;;
+      esac
+    fi
     ;;
-  deepseek|deepseek-r1|deepseek-reasoner|deepseek-v4)
-    KEY_FILE="$AI_KEYS_DIR/deepseek.env"
-    API_URL="https://api.deepseek.com/chat/completions"
-    MODEL_ID="deepseek-v4-pro"
-    DISPLAY_NAME="DeepSeek V4-Pro"
+
+  # =========================================================================
+  # AGGREGATOR: SiliconFlow 硅基流动 (China) — one key, DeepSeek/Qwen/GLM/Kimi/MiniMax
+  # Intl users: export SILICONFLOW_BASE_URL=https://api.siliconflow.com/v1
+  # =========================================================================
+  siliconflow)
+    KEY_FILE="$AI_KEYS_DIR/siliconflow.env"
+    BASE_URL_DEFAULT="https://api.siliconflow.cn/v1"
+    BASE_URL_ENVVAR="SILICONFLOW_BASE_URL"
+    DISPLAY_NAME="SiliconFlow 硅基流动"
+    if [[ -n "$MODEL_ID_OVERRIDE" ]]; then
+      MODEL_ID="$MODEL_ID_OVERRIDE"
+    else
+      # alias → SiliconFlow model ID (VOLATILE — live-tested 2026-07-19; check https://siliconflow.cn/models)
+      case "$MODEL" in
+        deepseek) MODEL_ID="deepseek-ai/DeepSeek-V4-Pro" ;;
+        deepseek-r1|reasoner) MODEL_ID="deepseek-ai/DeepSeek-R1" ;;
+        qwen)     MODEL_ID="Qwen/Qwen3.6-35B-A3B" ;;
+        glm)      MODEL_ID="zai-org/GLM-5.2" ;;
+        kimi)     MODEL_ID="Pro/moonshotai/Kimi-K2.6" ;;
+        minimax)  MODEL_ID="MiniMaxAI/MiniMax-M2.5" ;;
+        *)
+          echo "[api-dispatch] SiliconFlow 别名表无 '$MODEL'。" >&2
+          echo "[api-dispatch] 用 --model-id <raw> 透传，或查 https://siliconflow.cn/models" >&2
+          exit 1
+          ;;
+      esac
+    fi
     ;;
-  glm|glm-4|glm-4-plus|glm-5|glm-5.1)
-    KEY_FILE="$AI_KEYS_DIR/zai.env"
-    API_URL="https://open.bigmodel.cn/api/paas/v4/chat/completions"
-    MODEL_ID="glm-5.1"
-    DISPLAY_NAME="GLM-5.1 (智谱)"
+
+  # =========================================================================
+  # DIRECT: per-vendor direct call (default, backward compatible)
+  # =========================================================================
+  direct)
+    if [[ -z "$MODEL" ]]; then
+      echo "Usage: api-dispatch.sh --model <qwen|deepseek|glm|doubao|minimax> \"prompt\"" >&2
+      exit 1
+    fi
+    case "$MODEL" in
+      qwen|qwen-max|qwen-plus|qwen3.5|qwen3.6)
+        KEY_FILE="$AI_KEYS_DIR/dashscope.env"
+        API_URL="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+        MODEL_ID="qwen3.6-plus"
+        DISPLAY_NAME="Qwen3.6 Plus (通义千问)"
+        ;;
+      deepseek|deepseek-r1|deepseek-reasoner|deepseek-v4)
+        KEY_FILE="$AI_KEYS_DIR/deepseek.env"
+        API_URL="https://api.deepseek.com/chat/completions"
+        MODEL_ID="deepseek-v4-pro"
+        DISPLAY_NAME="DeepSeek V4-Pro"
+        ;;
+      glm|glm-4|glm-4-plus|glm-5|glm-5.1)
+        KEY_FILE="$AI_KEYS_DIR/zai.env"
+        API_URL="https://open.bigmodel.cn/api/paas/v4/chat/completions"
+        MODEL_ID="glm-5.1"
+        DISPLAY_NAME="GLM-5.1 (智谱)"
+        ;;
+      doubao|doubao-pro|seed|volcengine)
+        KEY_FILE="$AI_KEYS_DIR/volcengine.env"
+        API_URL="https://ark.cn-beijing.volces.com/api/v3/chat/completions"
+        MODEL_ID="doubao-seed-2-0-pro-260215"
+        DISPLAY_NAME="豆包 Seed-2.0 Pro (字节)"
+        ;;
+      minimax|minimax-m2.7|m2.7)
+        KEY_FILE="$AI_KEYS_DIR/minimax.env"
+        API_URL="https://api.minimax.io/v1/chat/completions"
+        MODEL_ID="MiniMax-M2.7"
+        DISPLAY_NAME="MiniMax M2.7"
+        ;;
+      *)
+        echo "[api-dispatch] direct 模式不支持的模型: $MODEL" >&2
+        echo "[api-dispatch] direct 支持: qwen, deepseek, glm, doubao, minimax" >&2
+        echo "[api-dispatch] 或用聚合平台: --via openrouter / --via siliconflow" >&2
+        exit 1
+        ;;
+    esac
     ;;
-  doubao|doubao-pro|seed|volcengine)
-    KEY_FILE="$AI_KEYS_DIR/volcengine.env"
-    API_URL="https://ark.cn-beijing.volces.com/api/v3/chat/completions"
-    MODEL_ID="doubao-seed-2-0-pro-260215"
-    DISPLAY_NAME="豆包 Seed-2.0 Pro (字节)"
-    ;;
-  minimax|minimax-m2.7|m2.7)
-    KEY_FILE="$AI_KEYS_DIR/minimax.env"
-    API_URL="https://api.minimax.io/v1/chat/completions"
-    MODEL_ID="MiniMax-M2.7"
-    DISPLAY_NAME="MiniMax M2.7"
-    ;;
+
   *)
-    echo "[api-dispatch] 不支持的模型: $MODEL" >&2
-    echo "[api-dispatch] 支持: qwen, deepseek, glm, doubao, minimax" >&2
+    echo "[api-dispatch] 未知 provider: '$PROVIDER'（支持 direct / openrouter / siliconflow）" >&2
     exit 1
     ;;
 esac
@@ -92,15 +225,27 @@ esac
 # --- Load API key ---
 if [[ ! -f "$KEY_FILE" ]]; then
   echo "[api-dispatch] Key 文件不存在: $KEY_FILE" >&2
+  if [[ "$PROVIDER" == "openrouter" ]]; then
+    echo "[api-dispatch] 聚合易用路径：在 $KEY_FILE 写 'export OPENROUTER_API_KEY=...'（一个 key 调多模型，https://openrouter.ai/keys）" >&2
+  elif [[ "$PROVIDER" == "siliconflow" ]]; then
+    echo "[api-dispatch] 聚合易用路径：在 $KEY_FILE 写 'export SILICONFLOW_API_KEY=...'（一个 key 调多模型，https://siliconflow.cn）" >&2
+  fi
   exit 1
 fi
 
 # shellcheck source=/dev/null
 source "$KEY_FILE"
 
+# Resolve aggregator base URL AFTER sourcing, so a *_BASE_URL defined *inside* the
+# .env file (e.g. SILICONFLOW_BASE_URL for the intl endpoint) actually takes effect.
+if [[ -n "$BASE_URL_ENVVAR" ]]; then
+  base_from_env="${!BASE_URL_ENVVAR:-}"
+  API_URL="${base_from_env:-$BASE_URL_DEFAULT}/chat/completions"
+fi
+
 # Try common API key variable names (covers different naming conventions)
 API_KEY=""
-for var in DASHSCOPE_API_KEY DEEPSEEK_API_KEY ZAI_API_KEY ZHIPUAI_API_KEY BIGMODEL_API_KEY VOLCENGINE_API_KEY VOLC_API_KEY ARK_API_KEY MINIMAX_API_KEY API_KEY; do
+for var in OPENROUTER_API_KEY SILICONFLOW_API_KEY DASHSCOPE_API_KEY DEEPSEEK_API_KEY ZAI_API_KEY ZHIPUAI_API_KEY BIGMODEL_API_KEY VOLCENGINE_API_KEY VOLC_API_KEY ARK_API_KEY MINIMAX_API_KEY API_KEY; do
   if [[ -n "${!var:-}" ]]; then
     API_KEY="${!var}"
     break
@@ -109,7 +254,7 @@ done
 
 if [[ -z "$API_KEY" ]]; then
   echo "[api-dispatch] 在 $KEY_FILE 中未找到 API key" >&2
-  echo "[api-dispatch] 请确保 .env 定义了对应 API key（DEEPSEEK_API_KEY / DASHSCOPE_API_KEY / ZAI_API_KEY / ARK_API_KEY / MINIMAX_API_KEY 之一）" >&2
+  echo "[api-dispatch] 请确保 .env 定义了对应 API key（如 OPENROUTER_API_KEY / SILICONFLOW_API_KEY / DEEPSEEK_API_KEY 之一）" >&2
   exit 1
 fi
 
@@ -120,13 +265,14 @@ if [[ -z "$JSON_PROMPT" ]]; then
   exit 1
 fi
 
-echo "[api-dispatch] 正在调用 $DISPLAY_NAME..." >&2
+echo "[api-dispatch] 正在调用 $DISPLAY_NAME ($MODEL_ID)..." >&2
 
 # --- Call API (OpenAI-compatible format) ---
 API_RESPONSE=$(curl -s --max-time "$TIMEOUT" \
   "$API_URL" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $API_KEY" \
+  "${EXTRA_HEADERS[@]+"${EXTRA_HEADERS[@]}"}" \
   -d "{\"model\":\"$MODEL_ID\",\"max_tokens\":8192,\"messages\":[{\"role\":\"user\",\"content\":${JSON_PROMPT}}]}" \
   2>/dev/null || true)
 
@@ -152,6 +298,9 @@ fi
 
 if [[ -n "$ERROR_MSG" ]]; then
   echo "[api-dispatch] $DISPLAY_NAME API 错误: $ERROR_MSG" >&2
+  if [[ "$PROVIDER" != "direct" ]]; then
+    echo "[api-dispatch] 若为 model 不存在，别名表可能已过时——查 models 页或用 --model-id 透传正确 ID" >&2
+  fi
   exit 1
 fi
 

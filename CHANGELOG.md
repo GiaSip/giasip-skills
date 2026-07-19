@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **giasip-dispatch aggregator channel (skill v1.2.0 → v1.3.0)** — lowers first-run setup from "sign up per vendor" to **one aggregator key**. `api-dispatch.sh` gains a provider layer resolved as `--via <provider>` flag > `$DISPATCH_PROVIDER` env > `direct` (default, fully backward compatible):
+  - `openrouter` (overseas) — one key reaches DeepSeek / Qwen / GLM / Kimi / MiniMax **plus** Claude / GPT / Gemini; optional attribution headers.
+  - `siliconflow` 硅基流动 (China) — one key, China-direct, DeepSeek / Qwen / GLM / Kimi / MiniMax; `SILICONFLOW_BASE_URL` override for the intl `.com` endpoint.
+  - Friendly aliases (`deepseek`/`qwen`/`glm`/`kimi`/`minimax`, plus `claude`/`gpt`/`gemini` on OpenRouter) map to per-provider model IDs; `--model-id <raw>` escape hatch passes any model verbatim.
+  - New `references/model-roster.md` alias → model-ID tables (flagged volatile), README "Easy path" setup section, and updated SKILL.md channel guidance (aggregator = pure-analysis + multi-dispatch; CLI stays for agentic write / native vision).
+  - Domestic aggregator choice: SiliconFlow over Volcengine Ark — Ark gates third-party models behind a Coding-Plan subscription and its generic API needs opaque `ep-xxx` endpoint IDs, unsuitable as an open-skill default.
+
 ## [1.6.1] — 2026-07-19
 
 ### Changed

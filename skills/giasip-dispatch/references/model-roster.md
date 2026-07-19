@@ -2,7 +2,42 @@
 
 > Model names and versions evolve with vendor updates. Check vendor docs before calling.
 
-## API Direct Call Models
+## Aggregator (★ easy path) — alias → model-ID maps
+
+One aggregator key covers every model below. Set `DISPATCH_PROVIDER=openrouter` (overseas) or `siliconflow` (China), then call `api-dispatch.sh --model <alias>`.
+
+> ⚠️ **These model IDs are the most perishable thing in this repo.** Aggregators rename/retire models constantly. If a call 404s on the model, look it up on the vendor's models page and either update the alias in `scripts/api-dispatch.sh` or pass the correct ID via `--model-id <raw>` (which bypasses this table entirely). Do NOT trust these strings as current without checking.
+
+### OpenRouter (overseas) — `https://openrouter.ai/api/v1` · [models page](https://openrouter.ai/models)
+
+Slugs below were confirmed present in OpenRouter's `/models` list on 2026-07-19 (not live-called — no key on hand).
+
+| Alias | Model ID | Note |
+|-------|----------|------|
+| `deepseek` | `deepseek/deepseek-chat` | reasoner: `deepseek/deepseek-r1` (alias `deepseek-r1`) |
+| `qwen` | `qwen/qwen3-235b-a22b` | Tongyi flagship |
+| `glm` | `z-ai/glm-4.6` | Zhipu |
+| `kimi` | `moonshotai/kimi-k2.6` | Moonshot |
+| `minimax` | `minimax/minimax-m2.5` | |
+| `claude` | `anthropic/claude-sonnet-5` | bonus — not reachable via the China aggregator |
+| `gpt` | `openai/gpt-5.5` | bonus |
+| `gemini` | `google/gemini-3.1-pro-preview` | bonus — also handles vision via API |
+
+### SiliconFlow 硅基流动 (China) — `https://api.siliconflow.cn/v1` · [models page](https://siliconflow.cn/models)
+
+IDs below were **live-tested** against SiliconFlow on 2026-07-19 (each returned HTTP 200). Note SiliconFlow's `Pro/` prefix on some models — the bare form 404s.
+
+| Alias | Model ID | Note |
+|-------|----------|------|
+| `deepseek` | `deepseek-ai/DeepSeek-V4-Pro` | reasoner: `deepseek-ai/DeepSeek-R1` (alias `deepseek-r1`) |
+| `qwen` | `Qwen/Qwen3.6-35B-A3B` | bigger option: `Qwen/Qwen3.5-397B-A17B` |
+| `glm` | `zai-org/GLM-5.2` | |
+| `kimi` | `Pro/moonshotai/Kimi-K2.6` | needs the `Pro/` prefix |
+| `minimax` | `MiniMaxAI/MiniMax-M2.5` | |
+
+> China direct-access, no VPN. Open-source / domestic models only — no Claude / GPT / Gemini. Unverified accounts are capped at 100 calls/day; ID-verify to lift it. Intl users route via `https://api.siliconflow.com/v1` (set `SILICONFLOW_BASE_URL`).
+
+## API Direct Call Models (per-vendor, advanced)
 
 | Parameter | Model | Key File | Context | API Endpoint | Best For |
 |-----------|-------|----------|---------|-------------|----------|
