@@ -28,7 +28,12 @@ Each ClaimCard contains:
 - `claim_type`: factual / metric / causal / opinion
 - `source_url`: normalized URL
 - `source_type`: owner / regulator / official / independent / vendor / aggregate / community (= fine-grained version of the 4-tier source hierarchy)
-- `evidence`: **short quote _or_ locator** (locator: table row / PDF page number / registry field / patent metadata — when no clean quote exists, give a locator instead of fabricating one)
+- `evidence_kind`: `quote` (default) / `locator` — **declare it explicitly**; leaving it implicit is what makes an unanchored claim indistinguishable from an unquotable one
+- `evidence`: when `quote`, a **verbatim** span copied out of the text you actually fetched (source's own language, ≥8 consecutive words, or ≥15 chars for CJK) — **never retyped from memory**; when `locator`, a table row / PDF page / registry field / patent metadata **plus the reason the source isn't quotable** (scanned PDF, no text layer, paywalled stub). Locator is the fallback for genuinely unquotable sources, not a shortcut for "didn't open it" — fabricating a quote is the worse failure, which is why locator stays legal
+- `retrieved_at` / `source_sha256`: ISO8601 fetch time + `sha256(normalized main text)[:16]` **at that moment**. These are what let a later re-check tell **"the quote was wrong"** apart from **"the page changed since"** — without them every re-check conflates the two.
+  - **Normalization is a fixed algorithm, not a vibe** — two hosts that normalize differently produce different hashes for an unchanged page, which reads as false drift. Apply exactly, in order: ① take the **extracted main text** (reader-mode body — not raw HTML, not nav/footer/ads, not a screenshot); ② Unicode **NFC**; ③ line endings → `\n`; ④ strip leading/trailing whitespace per line; ⑤ collapse every run of whitespace to one space; ⑥ drop empty lines; ⑦ UTF-8 encode → `sha256` → first 16 hex chars.
+  - **When you cannot hash**: if the host won't give you the full body (paywall stub, scanned PDF, JS-gated content, a reader that returns only a summary), write `source_sha256: unavailable` — **not** a guess and not silence — and add `capture_method` naming how you actually read it (`reader-mode`, `raw-html`, `pdf-text-layer`, `ocr`, `api-json`, `search-snippet-only`). An explained `unavailable` is legitimate; an unexplained blank is indistinguishable from never opening the source and gets capped accordingly.
+  - Omit both fields only when the fetch itself failed (then say so in `gap`).
 - `source_says_vs_agent_infers`: what the source actually says vs. what you infer — separate them
 - `confidence`: high / medium / low
 - `gap` / `counterquery`: what's still missing + counter-evidence keywords to search next

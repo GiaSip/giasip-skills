@@ -76,6 +76,41 @@ Reviewer input:
 
 **Output**: append a `## Mini Assurance Audit` section at the end of the final report (3-label stats + unverifiable/conflict list + artifact reference paths), and persist the same section to `<run_dir>/audit.md`.
 
+---
+
+### Completeness is a machine-checked contract, not an instruction
+
+*(Added 2026-08-04. Until then this file said only "for each report topic sentence" — an intent with nothing enforcing it, and the audit silently degraded into a rubber stamp.)*
+
+**One input sentence ⇒ exactly one verdict row. Sentence IDs must correspond one-to-one.**
+
+Because the party being checked cannot also supply the answer key, the orchestrator persists the authoritative input set **before dispatching the reviewer**:
+
+```
+<run_dir>/audit-input.tsv     # one line per topic sentence:  S01<TAB>fact<TAB><sentence>
+```
+
+The reviewer's `audit.md` must contain a line of its own reading `input_sentence_count: N`
+(ASCII key — a Chinese/prose phrasing like "输入 N 句" gets falsely matched by any "N sentences" in the body),
+followed by one row per sentence: `S01 | supported|unverifiable|conflict | <artifact path + key sentence>`.
+
+Validate with the checker that ships **inside this skill** — byte-identical in every generated target, so the rule cannot drift between hosts:
+
+```bash
+python3 "<skill_dir>/scripts/validate-audit.py" \
+  --expected "<run_dir>/audit-input.tsv" --audit "<run_dir>/audit.md"
+```
+
+`<skill_dir>` is wherever this skill was unpacked. The checker is stdlib-only Python 3 — no install step, no network.
+
+> **If you cannot run it** — no Python 3, a sandbox that blocks execution, a host without a shell — the contract above still binds, but *nothing is enforcing it*. Then **say exactly that in the audit** rather than reporting a gate as passed. A gate nobody runs is the failure mode this whole section exists to document.
+
+It rejects all four evasions: **range collapse** (`| S01–S19 | supported ×19 |`), **omitted sentences**, **a repeated ID padding the row count**, and **IDs absent from the authoritative list**. Failure ⇒ re-dispatch the reviewer once; failing again ⇒ mark the whole run `partial`, never deliverable.
+
+> **Why the answer key is externalized** — 2026-08-03 a reviewer collapsed 27 sentences into 2 summary rows and the gate printed "✅ passed", exit 0. The same question audited sentence-by-sentence had caught 1 `unverifiable`; the collapsed version reported 0. The first fix compared row count against a number **declared inside `audit.md` itself**, so a reviewer that collapsed to 2 rows and declared "2 sentences" still passed. Any check whose baseline comes from the audited party is decorative.
+
+> **Scope boundary — do not oversell this.** It validates *structure* only. A reviewer can still label every sentence `supported` and pass. This gate stops collapse, omission and fabrication; it does not stop *wrong* verdicts.
+
 **Cost**: +5-10 min per research run, +10-15% tokens. **Expected effect** (internal estimate, not a benchmarked result): fewer unsupported claims reach the final report.
 
 **Upgrade path** (evaluate reviewer hit rate after accumulating cases):

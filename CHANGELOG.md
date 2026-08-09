@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-08-09
+
+### Added — Research: the completeness gate now ships with the contract
+- **`skills/*/scripts/validate-audit.py` is published inside both generated targets.** Until now the targets carried the prose of the Mini Assurance completeness contract — *one input sentence ⇒ exactly one verdict row* — but not the checker that enforces it, and pointed at a path that did not exist in what you downloaded. A gate nobody can run is the exact failure mode that section documents, so enforcement now travels with the contract. Stdlib-only Python 3, no install step, no network.
+- **ClaimCard v2.6 — capture anchors.** `evidence_kind` (`quote` | `locator`, must be declared explicitly) plus `retrieved_at` / `source_sha256`, so a later re-check can tell *"the quote was wrong"* from *"the page changed since"* instead of conflating them. A `central` claim resting only on a locator caps at `weak`: mentionable, never a conclusion. Deliberately **not** "quotes are mandatory" — that would reward fabricating source text, which is the worse failure.
+- **A deterministic normalization algorithm for `source_sha256`** (extracted main text → NFC → `\n` → per-line trim → whitespace collapse → drop empty lines → UTF-8 → `sha256[:16]`). Two hosts normalizing differently would hash an unchanged page differently and report false drift. Where a host genuinely cannot obtain a hashable body, `source_sha256: unavailable` plus a `capture_method` is the correct answer — an explained gap keeps normal status; an unexplained blank does not.
+
+### Fixed — Research: host-portability and honesty defects found in pre-release review
+- **Host-specific primitives no longer presented as universal.** `wait(all=true)` and one runtime's file-output parameters appeared as if every host had them. Both are now stated capability-neutrally, so a host lacking them isn't told to call something that does not exist.
+- **The wiring caveat now precedes the command it qualifies.** The runnable block used to sit above the paragraph explaining that the script was absent, under the heading "the same script on every host" — false for a published target, and an agent reading top-down would execute first and read the caveat afterwards. Reordered, and the claim corrected.
+- **References to the author's private hosts, internal commit ids and internal knowledge-base document names removed** from the published prose and from the shipped script's module docstring. A cited practitioner heuristic now credits its public source directly instead of an internal note.
+- **`scripts/sync_codex_plugin.py` now verifies shipped executables**, not just `references/`: file lists, byte equality across both targets, and the executable bit. A checker that ships without `+x` is a checker nobody runs — and checking only prose would have left the two targets free to publish different enforcement while reading identically.
+
 ### Added
 - **giasip-dispatch aggregator channel (skill v1.2.0 → v1.3.0)** — lowers first-run setup from "sign up per vendor" to **one aggregator key**. `api-dispatch.sh` gains a provider layer resolved as `--via <provider>` flag > `$DISPATCH_PROVIDER` env > `direct` (default, fully backward compatible):
   - `openrouter` (overseas) — one key reaches DeepSeek / Qwen / GLM / Kimi / MiniMax **plus** Claude / GPT / Gemini; optional attribution headers.

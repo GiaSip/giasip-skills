@@ -112,6 +112,36 @@ def internal_check() -> None:
         ).read_bytes() != (codex_ref_root / relative).read_bytes():
             raise SystemExit(f"generated reference differs: {relative}")
 
+    # Targets also ship executables (the Mini Assurance completeness checker). Checking only
+    # references/ would leave exactly the blind spot this whole gate exists to close: the two
+    # targets could publish different enforcement while their prose stayed identical.
+    claude_scripts_root = CLAUDE_TARGET / "scripts"
+    codex_scripts_root = CODEX_PLUGIN / "skills" / "research" / "scripts"
+    for root in (claude_scripts_root, codex_scripts_root):
+        if not root.is_dir():
+            raise SystemExit(f"generated target is missing its shipped scripts/: {root}")
+    claude_scripts = sorted(
+        path.relative_to(claude_scripts_root)
+        for path in claude_scripts_root.rglob("*")
+        if path.is_file()
+    )
+    codex_scripts = sorted(
+        path.relative_to(codex_scripts_root)
+        for path in codex_scripts_root.rglob("*")
+        if path.is_file()
+    )
+    if claude_scripts != codex_scripts:
+        raise SystemExit("Claude and Codex generated script file lists differ")
+    for relative in claude_scripts:
+        claude_script = claude_scripts_root / relative
+        codex_script = codex_scripts_root / relative
+        if claude_script.read_bytes() != codex_script.read_bytes():
+            raise SystemExit(f"generated script differs: {relative}")
+        # A checker that ships without the executable bit is a checker nobody runs.
+        for path in (claude_script, codex_script):
+            if not os.access(path, os.X_OK):
+                raise SystemExit(f"shipped script is not executable: {path}")
+
     plugin = load_json(CODEX_PLUGIN / ".codex-plugin" / "plugin.json")
     if plugin.get("name") != "giasip" or plugin.get("version") != release_version():
         raise SystemExit("Codex Plugin name/version is not synchronized")
