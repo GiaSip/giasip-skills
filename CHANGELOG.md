@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — Research: a discovery sweep in front of the recon, and a quote gate behind it
+- **Step 2A discovery sweep.** The skill was verification-heavy and discovery-light: an internal survey run through it lost on *breadth* to a plain chatbox search — it missed the closest competitor's detail and missed an adjacent-category project outright, because every facet keyword was locked to the topic's own name. Quality control catches "is this claim right"; it cannot catch "the relevant thing never entered the run," because a missed entity produces no claim to check. 2A harvests names, aliases and category words with a fixed 6-field schema per round — including **required negative results**, since a dry round is otherwise indistinguishable from a lazy one — queries field-native indexes before generic web search, asks the adjacent-category question, and stops at 2 rounds by default (hard cap 3). Discovery and evidence-gathering stay **separate stages** on purpose: merged, the first plausible entity becomes the frame before the map exists.
+- **Source snapshots + `scripts/verify-quotes.py`, shipped inside both targets.** Central and high-risk claims persist the normalized body they hashed to `snapshots/<claim_id>.txt`; a hash whose text nobody kept can be recomputed by nobody. The gate matches each verbatim quote against that snapshot — **never against the worker artifact that produced it**, which would be the audited party supplying its own answer key. Cheap deterministic matching first; only failures reach a reviewer.
+- **The gate refuses to guess.** Its input is a strict `quotes.tsv` written before it runs; a malformed row is an input error, never a silently skipped one. This replaced a tolerant Markdown parser that had two reproduced false-passes: an empty quote matched every snapshot, and a valid GFM table without outer pipes dropped its rows — a fabricated quote among them — while the gate printed a pass. Stated boundary, deliberately narrow: given a snapshot accepted as authoritative, the quote is a substring of it. Not that the source supports the claim, and not that quote and snapshot were fabricated together.
+
 ## [1.7.0] — 2026-08-09
 
 ### Added — Research: the completeness gate now ships with the contract
