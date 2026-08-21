@@ -2,15 +2,17 @@
 
 > Triggers when task has "hallucination tolerance = extremely low + citation requirement = academic-grade" (policy verification / BOM selection / Chinese primary source research / regulation clause verification / model license verification). Reports delivered directly from Recon **must undergo independent fact-checking** — the orchestrator and recon workers cannot self-score.
 
-## Layer -1 — Deterministic quote pre-check (run first, costs nothing)
+## Layer -1 — Deterministic quote gate (run first, costs nothing)
 
-Before any reviewer — human, model, or paid platform — run the quote checker that ships inside this skill against the run's **source snapshots**:
+Before any reviewer — human, model, or paid platform — run the quote checker that ships inside this skill. The orchestrator writes `<run_dir>/quotes.tsv` first (externalized input, same principle as `audit-input.tsv` below), then:
 
 ```bash
 python3 "<skill_dir>/scripts/verify-quotes.py" --run-dir "<run_dir>"
 ```
 
-Cheap deterministic matching first, expensive judgment only on what it cannot settle. It compares each `quote` claim against `<run_dir>/snapshots/<claim_id>.txt` — **the source text, never a worker artifact**: checking a quote against the artifact that produced it is the audited party supplying its own answer key, the same hole `validate-audit.py` exists to close. Only failures go to a reviewer. It validates that the quote **appears in the source**, not that the source supports the claim; URL reachability is reported separately and is not evidence.
+Cheap deterministic matching first, expensive judgment only on what it cannot settle. Each `quote` claim is compared against its snapshot under `<run_dir>/snapshots/` — **the source text, never a worker artifact**: checking a quote against the artifact that produced it is the audited party supplying its own answer key, the same hole `validate-audit.py` exists to close (snapshot paths pointing into `artifacts/` are refused outright). Malformed rows are input errors, not skipped rows.
+
+Boundary, stated no stronger: **given a snapshot accepted as authoritative**, the quote is a substring of it. It does not show the snapshot came from that URL, that quote and snapshot were not fabricated together, or that the source supports the claim — a passing quote still owes Mini Assurance its semantic audit. `unverifiable_capture` rows were verified by nothing and need manual review. URL reachability is separate and is not evidence.
 
 ## Layer 0 — Primary Source Locator Direct Reading (Principle 7 invariant)
 
@@ -73,7 +75,8 @@ After the report draft is generated but before output to user, dispatch a **fres
 **No-slot fallback (must be explicit in the audit):** If the host has no **fresh worker slot**, first reuse an **idle independent worker** that did not participate in this run and give it only the ledger, raw artifact paths, and key-claim list. If no independent worker is available, the orchestrator performs the same artifact-only checks as a **non-independent fallback**, labels `audit_independence: degraded`, and never reports this as an independent review. Do not silently omit Mini Assurance.
 
 Reviewer input:
-- **Claim Ledger** (`<run_dir>/ledger.md`) + Round 1/Round 2 worker artifacts (`<run_dir>/artifacts/*.md`, persisted by the orchestrator in Step 0) + draft's "key claim list"
+- **Claim Ledger** (`<run_dir>/ledger.md`) + **evidence artifacts only** — the Round 1 (2B) and Round 2 worker outputs under `<run_dir>/artifacts/`, persisted by the orchestrator in Step 0 — + draft's "key claim list"
+  - **`artifacts/00-discovery.md` is excluded.** Step 2A reads nothing deeply and produces no ClaimCards; the file holds leads (including a chatbox pass) and index listings whose whole point is that they were *not* verified. Handing it to the reviewer under an `artifacts/*.md` wildcard would let a lead be labelled `supported` — which quietly reverses 2A's "lead, not evidence" rule. It may be used for a coverage question ("was this angle searched?"), never to support a claim.
 - **(Adjudication only) extracted `warrant_records[]`**: `conclusion_id / hypothesis_id / evidence_ids / warrant / qualifier / key_defeater / contrary_claim_ids` — so the reviewer can audit each load-bearing conclusion without reading the draft's conclusions section (the conclusion sentences arrive here as extracted entries, not by reading the draft)
 - **Task**: for each report topic sentence, assign one of 3 labels:
   - ✅ `supported`: artifact contains original text support (must attach artifact path + key sentence)

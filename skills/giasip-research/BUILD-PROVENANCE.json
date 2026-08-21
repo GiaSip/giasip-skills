@@ -3,6 +3,8 @@
   "profile": "standalone",
   "semantic_contract": [
     "run-persistence",
+    "discovery-sweep",
+    "source-snapshot-quote-gate",
     "breadth-first-facet-selection",
     "claim-ledger-gate",
     "hypothesis-spine",
@@ -11,15 +13,15 @@
     "deep-research-reflow"
   ],
   "source_hashes": {
-    "PLAYBOOK.md": "688f491bfb2e4b9bdb9930ee694e2e73df9077fea7322edad7a2aac79ed81464",
-    "references/fact-check-protocol.md": "45863e064e5973fe7b5a8199a0993605bb97891c84782beaa8ac23f6825bcc43",
+    "PLAYBOOK.md": "3a47621939ab23a887eaebd0db5e18026e9e9f5ae26d78e369d72e1207e49c1b",
+    "references/fact-check-protocol.md": "9dbdd9c8cfb6fc7ba44a3e4ad51dfceb7ab48c4ad9a2cab8f260bcaeebae4ea0",
     "references/hypothesis-spine.md": "081d23ebbef2430aabe7d08aa1fab86e3377931db61623ae00857a88522755fa",
     "references/matching-rules.md": "0a6edf2e46f1425ce60df7d3a6ebd875c6b012a82ef54914fe752779f85b34bf",
     "references/platform-profiles.md": "de6f230611713764bb4017eb63a9510fd2f585ed7f9a8e71dc86d84377f6f319",
     "references/recon-template.md": "a0cb7608be47ac58db8981614c838fd682771c363d29ca725cd8dc31e8d80cf5",
-    "references/subagent-templates.md": "845f2db95e6b397e9928d48ff3ce6fa58c288c0d4e6a85757dfcf8ca83a90e28",
+    "references/subagent-templates.md": "93818ba62aee3a0e18db51204193f7131ffd2e085a01eb1c949ab87f6cf75b1f",
     "scripts/validate-audit.py": "a9ee048488956ab97ce6d4b33c6d3b028d666316db3787a5e1575ddc4bd42fa3",
-    "scripts/verify-quotes.py": "baf7a554efdc1bacd24a16b7031573bd064c6dcd5cc3b6adca1524a55cbde0fa"
+    "scripts/verify-quotes.py": "f0fa50ad312aaee3c4651e07e00250fdb1a45d53c78485240054d75badf9cdac"
   },
   "source_root": "agent-skills/portable/research"
 }

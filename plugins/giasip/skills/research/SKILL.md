@@ -59,6 +59,7 @@ Any task that **enters Recon, or skips Recon to escalate directly to DR**, first
     manifest.md               # run state anchor (cross-session recovery entry, see below)
     artifacts/                # each recon worker facet/gap's full raw output, one .md (incl. 00-discovery.md from Step 2A)
     snapshots/                # normalized main text of critical / high-risk sources, one file per claim_id (Step 2.5)
+    quotes.tsv                # externalized input for the quote gate, written before it runs (Step 2.5)
     ledger.md                 # Claim Ledger master table (Step 2.5) + Hypothesis Matrix as an independent section (Adjudication, Step 2.5)
     recon-report.md           # final report for Recon direct delivery
     deep-research-prompt.md   # if escalated: generated DR prompt
@@ -123,7 +124,7 @@ Before facet decomposition, run pure discovery: harvest names, aliases and categ
 
 **Stopping rule**: default 2 rounds, hard cap 3. Round 3 opens **only** when round 2 still produced decision-relevant new entries. "Dry" means **no effective new entries** — entries that would change facet selection — not a count of entities: 20 more forks of the same project is a dry round.
 
-**Output**: entity list + alias vocabulary + negative-result record, persisted to `<run_dir>/artifacts/00-discovery.md`.
+**Output**: entity list + alias vocabulary + negative-result record, persisted to `<run_dir>/artifacts/00-discovery.md`. **That file is a coverage record, never evidence** — it holds leads and index listings that were deliberately not read. It is excluded from the artifact set a Mini Assurance reviewer may cite as support (Step 3); a claim traceable only to it is unsupported.
 
 **2A and 2B stay separate.** Merging them ("discover and verify as you go") is what makes a run converge early: the first plausible entity becomes the frame, and everything after it gathers evidence for a frame chosen before the map existed.
 
@@ -165,13 +166,19 @@ Run through the gate in order:
 5. **Claims with conflicting evidence → selective adversarial verification** (see below, not full-coverage)
 6. **Uncertain claims → mark `unresolved`, not `refuted`** (refuted requires explicit conflicting evidence; uncertain ≠ disproven, just not reportable as fact)
 
-**Deterministic quote pre-check (cheap, runs before any reviewer)**: once snapshots exist, verify every `quote` claim mechanically against its **source snapshot** — never against a worker artifact, which is the audited party restating itself.
+**Deterministic quote gate (cheap, runs before any reviewer)**: once snapshots exist, verify every `quote` claim mechanically against its **source snapshot** — never against a worker artifact, which is the audited party restating itself. The orchestrator first writes the claim rows to `<run_dir>/quotes.tsv` (same externalized-input principle as `audit-input.tsv`), tab-separated, header exactly:
+
+```
+claim_id	importance	evidence_kind	quote	snapshot	source_sha256	source_url
+```
 
 ```bash
 python3 "<skill_dir>/scripts/verify-quotes.py" --run-dir "<run_dir>"
 ```
 
-Failures (`quote_not_found` / `snapshot_hash_mismatch` / `no_snapshot`) are the only items that need a reviewer's attention; passing quotes need none. Same honest boundary as the audit gate: this checks that the quote is **in the source text**, not that the source supports the claim. URL reachability (`--check-urls`) is reported separately and is never evidence — a reachable URL says nothing about what it says.
+The gate refuses to guess: a malformed row is a hard input error (exit 2), never a skipped row — a tolerant Markdown parser drops rows silently, and a dropped row is indistinguishable from a passing one. `locator` rows leave quote/snapshot empty; a quote whose body could be read but not hashed writes `unavailable:<capture_method>` and is reported as `unverifiable_capture` — legitimate, and explicitly **not** verified.
+
+Failures are the only items that need a reviewer's attention; a passing quote still owes the ledger and Mini Assurance its *semantic* audit — "the quote is real" is not "the source supports the claim". State the boundary this way and no stronger: **given a snapshot accepted as authoritative**, the quote is a substring of it and the snapshot still hashes to what the ledger recorded. It does not show the snapshot came from that URL, that quote and snapshot were not fabricated together (usually the same worker made both — the defense against that is capturing outside the worker's control), or that extraction was complete. URL reachability (`--check-urls`) is reported separately and is never evidence.
 
 **Selective adversarial verification** (high-risk / conflicting claims only, not full coverage). Strictly follow Principle 7's verification priority invariant through three levels:
 - **① Primary source grounding first**: when owner/regulator/official primary sources are directly readable, read the original text to arbitrate — most conflicts resolve here, **no need for heterogeneous models**.
