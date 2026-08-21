@@ -2,6 +2,16 @@
 
 > Triggers when task has "hallucination tolerance = extremely low + citation requirement = academic-grade" (policy verification / BOM selection / Chinese primary source research / regulation clause verification / model license verification). Reports delivered directly from Recon **must undergo independent fact-checking** — the orchestrator and recon workers cannot self-score.
 
+## Layer -1 — Deterministic quote pre-check (run first, costs nothing)
+
+Before any reviewer — human, model, or paid platform — run the quote checker that ships inside this skill against the run's **source snapshots**:
+
+```bash
+python3 "<skill_dir>/scripts/verify-quotes.py" --run-dir "<run_dir>"
+```
+
+Cheap deterministic matching first, expensive judgment only on what it cannot settle. It compares each `quote` claim against `<run_dir>/snapshots/<claim_id>.txt` — **the source text, never a worker artifact**: checking a quote against the artifact that produced it is the audited party supplying its own answer key, the same hole `validate-audit.py` exists to close. Only failures go to a reviewer. It validates that the quote **appears in the source**, not that the source supports the claim; URL reachability is reported separately and is not evidence.
+
 ## Layer 0 — Primary Source Locator Direct Reading (Principle 7 invariant)
 
 For high-risk claims in the ledger **that have locators, read the primary source text directly to arbitrate** — this resolves most factual issues and **doesn't require paid DR / heterogeneous models**. Escalate to Layer 1/2 below only when:

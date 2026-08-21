@@ -67,7 +67,8 @@ Any task that **enters Recon, or skips Recon to escalate directly to DR**, first
   ```
   <run_dir>/
     manifest.md               # run state anchor (cross-session recovery entry, see below)
-    artifacts/                # each recon worker facet/gap's full raw output, one .md
+    artifacts/                # each recon worker facet/gap's full raw output, one .md (incl. 00-discovery.md from Step 2A)
+    snapshots/                # normalized main text of critical / high-risk sources, one file per claim_id (Step 2.5)
     ledger.md                 # Claim Ledger master table (Step 2.5) + Hypothesis Matrix as an independent section (Adjudication, Step 2.5)
     recon-report.md           # final report for Recon direct delivery
     deep-research-prompt.md   # if escalated: generated DR prompt
@@ -97,7 +98,7 @@ Extract from user input:
 
 > **Explicit declaration (required)**: After analysis, state the seven dimensions above — especially **hallucination tolerance + citation requirement + research mode** — in one or two lines before starting. They directly drive fact-check triggering (extremely low + academic-grade), the Round 2 primary-source constraint, and whether the Hypothesis Spine engages (Adjudication); skipping the declaration means re-improvising the judgment at every branch point, rendering the trigger chain moot.
 
-### Step 2: Quick Recon — Round 1 (Breadth Reconnaissance)
+### Step 2: Quick Recon — 2A Discovery Sweep, then 2B Round 1 (Breadth Reconnaissance)
 
 Use the current host's runtime mapping to run initial research, aiming to map the landscape and knowledge gaps within 2-5 minutes.
 
@@ -109,9 +110,36 @@ Skip directly to Step 4 (platform matching) in these scenarios:
 - The task is an **academic literature review** requiring full papers and citation chains beyond the host's public-web coverage
 - The user has already done preliminary research and comes with specific questions
 
-#### Round 1 Execution
+#### Step 2A: Discovery Sweep (harvest names, don't read deeply)
 
-Break the task into 2-3 **non-overlapping information facets** and dispatch one recon worker per facet using the selected runtime mapping. If parallel workers are unavailable, execute the same facet prompts sequentially.
+> **Origin**: a 2026-08-21 internal survey lost on **breadth** to a plain chatbox search — it missed the closest competitor's detail and missed an adjacent-category project (58k stars) outright, because every facet keyword was locked to the topic's own name. Verification was never the weak axis; discovery was.
+
+Before facet decomposition, run pure discovery: harvest names, aliases and category words; read nothing deeply, extract no ClaimCards. **Retrieval-mode quick lookups skip 2A.**
+
+**Each round returns exactly these 6 fields** (a fixed schema — an open-ended "search more" instruction is what lets a model declare saturation after one round):
+
+1. `queries_and_tools` — every query issued and where it was issued
+2. `new_vocabulary` — aliases and category words **the field itself uses**, not the ones you arrived with
+3. `new_entities` — projects / products / papers / organizations / people: name + one line + where found
+4. `gaps` — what is visibly still unmapped
+5. `negative_results` — `query + index searched + result: 0`. **Required, not optional**: a dry round can only be told apart from a lazy round by what was searched and came back empty
+6. `next_queries` — what this round's new vocabulary makes searchable that was not searchable before
+
+**The first round must include all three of:**
+
+- **A lead pass through a general chatbox** — ask a hosted assistant "what projects / approaches exist in this space". First round only, and its output is a **lead, not evidence**: every entity it names re-enters 2A as a query, and nothing from it may be cited without independent grounding in 2B
+- **Field-native index first** — the field's own registry (code-host search, preprint server, platform API, standards body) outranks generic web search, which returns the SEO layer of a field rather than the field
+- **The adjacent-category question** — "what else solves this need without being called by this name?" The named category is a keyword, not the boundary of the solution space
+
+**Stopping rule**: default 2 rounds, hard cap 3. Round 3 opens **only** when round 2 still produced decision-relevant new entries. "Dry" means **no effective new entries** — entries that would change facet selection — not a count of entities: 20 more forks of the same project is a dry round.
+
+**Output**: entity list + alias vocabulary + negative-result record, persisted to `<run_dir>/artifacts/00-discovery.md`.
+
+**2A and 2B stay separate.** Merging them ("discover and verify as you go") is what makes a run converge early: the first plausible entity becomes the frame, and everything after it gathers evidence for a frame chosen before the map existed.
+
+#### Step 2B: Round 1 Execution
+
+Break the task into 2-3 **non-overlapping information facets** — drawn from 2A's entity clusters and alias vocabulary when 2A ran — and dispatch one recon worker per facet using the selected runtime mapping. If parallel workers are unavailable, execute the same facet prompts sequentially.
 
 **Facet decomposition = diverge, then select on two axes** (not slotting the research type into a fixed template — templates make the model converge on the most typical three-part split and miss unknown angles):
 1. **Diverge**: privately list 4-6 candidate angles (default, not a hard rule; for high-uncertainty / high-risk topics include 1 cross-domain / challenger angle, but no novelty theater).
@@ -122,9 +150,7 @@ Break the task into 2-3 **non-overlapping information facets** and dispatch one 
 
 **Recon worker instruction template:** → See `references/subagent-templates.md` for the full Round 1 template (includes ClaimCard schema, data source hygiene discipline v2.4, and output format).
 
-**Tool selection:**
-- **Primary**: the host's native web search + page reading tools — zero additional external quota
-- **Fallback**: a browser or extraction tool only when the native reader hits JS rendering or anti-scraping blocks
+**Tool selection**: the host's native web search + page reading tools by default (zero additional external quota), falling back to a browser or extraction tool only when the native reader hits JS rendering or anti-scraping blocks — source priority itself is governed by 2A's field-native-index rule and the data source hygiene discipline in the worker template.
 
 ### Step 2.5: Claim Ledger Gate + Hypothesis Matrix + Gap Assessment & Round 2 (Conditional)
 
@@ -144,9 +170,18 @@ Run through the gate in order:
 1. **Merge duplicates** — URL dedup **+ claim-level semantic dedup** (the same number reposted by 5 aggregators ≠ 5 pieces of evidence; merge to 1, record `merged_from`)
 2. **Flag high-risk** — `risk_reason` non-empty = high-risk (≥10pp numbers / license / policy-legal-financial / AI same-faction assertions)
 3. **Central claims without locator → send back to Round 2** (no evidence-free conclusions allowed). **A locator is not a quote**: a `central` claim whose `evidence_kind` is `locator` caps at `weak` — it can be mentioned, never concluded, because no re-check can ever confirm or refute it mechanically. Same cap when the `capture_anchor` is missing **and unexplained** on a machine-readable source. Missing is *not* proof that nobody opened it — a host may read a page fine yet be unable to expose a hashable full body. So say which it is: record `source_sha256: unavailable` together with a `capture_method` naming how the source was actually read. An explained `unavailable` leaves the claim's normal status intact; an *unexplained* absence caps at `weak`, because nothing then distinguishes it from never having opened the source
+   - **Capture discipline for central / high-risk claims**: persist the **normalized main text** to `<run_dir>/snapshots/<claim_id>.txt` at capture time, alongside the hash. A hash with no snapshot behind it cannot be recomputed by anyone later, which is how `unavailable` becomes the inertial default instead of the exception it should be. The goal is a **re-checkable copy of the source text**, not one particular fetch tool: use whatever reader actually yields the full body for that format (HTML reader-mode, PDF text layer, API JSON, raw byte fetch); when a format genuinely yields no body, that is the `unavailable` + `capture_method` case above
 4. **Central claims supported only by vendor/aggregate → mark `weak`**, excluded from conclusion topic sentences (can only appear in "pending verification")
 5. **Claims with conflicting evidence → selective adversarial verification** (see below, not full-coverage)
 6. **Uncertain claims → mark `unresolved`, not `refuted`** (refuted requires explicit conflicting evidence; uncertain ≠ disproven, just not reportable as fact)
+
+**Deterministic quote pre-check (cheap, runs before any reviewer)**: once snapshots exist, verify every `quote` claim mechanically against its **source snapshot** — never against a worker artifact, which is the audited party restating itself.
+
+```bash
+python3 "<skill_dir>/scripts/verify-quotes.py" --run-dir "<run_dir>"
+```
+
+Failures (`quote_not_found` / `snapshot_hash_mismatch` / `no_snapshot`) are the only items that need a reviewer's attention; passing quotes need none. Same honest boundary as the audit gate: this checks that the quote is **in the source text**, not that the source supports the claim. URL reachability (`--check-urls`) is reported separately and is never evidence — a reachable URL says nothing about what it says.
 
 **Selective adversarial verification** (high-risk / conflicting claims only, not full coverage). Strictly follow Principle 7's verification priority invariant through three levels:
 - **① Primary source grounding first**: when owner/regulator/official primary sources are directly readable, read the original text to arbitrate — most conflicts resolve here, **no need for heterogeneous models**.

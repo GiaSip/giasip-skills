@@ -11,14 +11,15 @@
     "deep-research-reflow"
   ],
   "source_hashes": {
-    "PLAYBOOK.md": "8e0ea5ffbd95842a13fde35a855348a50a2bb08add7b965fa29c291d6aa24c77",
-    "references/fact-check-protocol.md": "9b865aeed45e7aabecc0c7b3b8e44966bed4f05e0735cc85a8c8b80d1629907b",
+    "PLAYBOOK.md": "688f491bfb2e4b9bdb9930ee694e2e73df9077fea7322edad7a2aac79ed81464",
+    "references/fact-check-protocol.md": "45863e064e5973fe7b5a8199a0993605bb97891c84782beaa8ac23f6825bcc43",
     "references/hypothesis-spine.md": "081d23ebbef2430aabe7d08aa1fab86e3377931db61623ae00857a88522755fa",
     "references/matching-rules.md": "0a6edf2e46f1425ce60df7d3a6ebd875c6b012a82ef54914fe752779f85b34bf",
     "references/platform-profiles.md": "de6f230611713764bb4017eb63a9510fd2f585ed7f9a8e71dc86d84377f6f319",
     "references/recon-template.md": "a0cb7608be47ac58db8981614c838fd682771c363d29ca725cd8dc31e8d80cf5",
-    "references/subagent-templates.md": "7812a704e20187567b8941e70045efa1f8f2d605bb39683e8eb07694cd720c2c",
-    "scripts/validate-audit.py": "a9ee048488956ab97ce6d4b33c6d3b028d666316db3787a5e1575ddc4bd42fa3"
+    "references/subagent-templates.md": "845f2db95e6b397e9928d48ff3ce6fa58c288c0d4e6a85757dfcf8ca83a90e28",
+    "scripts/validate-audit.py": "a9ee048488956ab97ce6d4b33c6d3b028d666316db3787a5e1575ddc4bd42fa3",
+    "scripts/verify-quotes.py": "baf7a554efdc1bacd24a16b7031573bd064c6dcd5cc3b6adca1524a55cbde0fa"
   },
   "source_root": "agent-skills/portable/research"
 }
