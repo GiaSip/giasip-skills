@@ -1,11 +1,11 @@
 ---
 name: research
-description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, decide whether a topic needs external Deep Research, or make an evidence-backed judgment or recommendation. Runs breadth-first Quick Recon, Claim Ledger gating, and an Adjudication Hypothesis Spine when needed. Explicit evaluation target compiled for Codex."
+description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, decide whether a topic needs external Deep Research, or make an evidence-backed judgment or recommendation. Runs breadth-first Quick Recon, Claim Ledger gating, and an Adjudication Hypothesis Spine when needed. This generated target uses Codex native collaboration and web tools."
 ---
 
 > ✦ A **GiaSip** generated target · github.com/GiaSip/giasip-skills
 
-# Research Self-contained Candidate
+# GiaSip Research — Codex
 
 > Generated from the neutral canonical Research method. Do not edit this target by hand; reconcile changes into the canonical source and rebuild.
 

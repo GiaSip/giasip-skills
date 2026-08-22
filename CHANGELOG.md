@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-08-22
+
+### ⚠️ BREAKING — `scripts/verify-quotes.py` now requires `--expected`
+
+The quote gate takes a second, mandatory input: an independent claim roster, written before the gate runs.
+
+```bash
+# before
+python3 scripts/verify-quotes.py --run-dir "<run_dir>"
+# now
+python3 scripts/verify-quotes.py --run-dir "<run_dir>" --expected "<run_dir>/claims-expected.tsv"
+```
+
+`claims-expected.tsv` is one `claim_id` per line (or a TSV whose first column is `claim_id`), derived from the ClaimCards. Invoking without it exits 2 with the migration line. **If you drive the skill through its own instructions you need do nothing** — the prose was updated in lockstep. Only callers that script the checker directly need to change.
+
+Why it had to break rather than default to permissive: strict row parsing protects *rows*, it cannot protect *coverage*. A `quotes.tsv` holding a header and one valid row is not malformed — so the previous version inspected that one row, printed `checked 1 claim(s): 1 quote_ok` and exited 0 while every other claim went unexamined. Reproduced on a real 34-claim run. The coverage denominator was being supplied by the very file under audit, which is the defect the sibling `validate-audit.py` exists to refuse. An optional flag would have left the default green and unchecked.
+
+Also in this release, same reasoning: **a run in which nothing was machine-checked now exits non-zero.** An all-`locator` or all-`unavailable` file is a legitimate state, but a gate that verified nothing must not print green.
+
+### Fixed — the skill required a second vendor in order to be conformant
+
+An agent necessarily has one model. It does not necessarily have a second one, and it may hold no external Deep Research subscription. Two steps assumed otherwise, both by writing a preference as a requirement:
+
+- **Step 2A's first round mandated "a lead pass through a general chatbox."** It now mandates a **named-entity lead list the host produces itself** — proper nouns, written before any facet is chosen, marked lead-not-evidence, every name re-entering 2A as a query. A second assistant from another vendor is named once, as the highest-value *optional* addition (it contributes a different retrieval stack and ranking), with "a run that skips it is fully conformant" stated explicitly.
+- **The fact-check protocol read as though external Deep Research were the primary layer.** It never was: the quote gate, primary-source locator reading, the independent worker blind-spot check and Mini Assurance all run on the host. The layers are now split into **baseline** (always required when the protocol triggers) and **enhancement** (run when available, never a blocker), with honest degradation labels — `fact_check_depth: baseline-only`, `cross_faction: unavailable` — reusing the idiom Mini Assurance already had for a missing worker slot.
+
+Cross-faction discipline is kept and sharpened rather than relaxed: with no second vendor family reachable, the false-humility dimension is **unavailable and must be labelled so**, not quietly delegated to a same-family reviewer. A labelled unassessed dimension is recoverable; a quietly misassessed one is not.
+
+A mandatory step that some hosts cannot perform is worse than an absent one — it teaches the reader that "mandatory" is negotiable, and that lesson spreads to the steps that are not.
+
+### Changed — a quote must be one contiguous span
+
+`evidence` must be reproducible by selecting an unbroken run of characters in the source. This rules out, structurally: elision in any spelling (`...`, `…`, `[…]`, `[omitted]`), splicing two passages together, and appending your own annotation inside the field. Two separated passages are **two claims**. The earlier draft of this rule said "no ellipsis", which only bans one spelling of omission — the invariant is contiguity.
+
+Quotes should be copied **out of the snapshot, not off the page**. Normalization strips the markup that carries superscripts and tag-adjacent punctuation, so `10<span class="oj-super">25</span>.` becomes `10 25 .` and a good-faith `10^25.` can never match its own snapshot — which lands hardest on the highest-stakes claims (compute thresholds, statutory dates). A first end-to-end run on a real legal-research question had 9 of 34 claims fail the gate; none were fabrications, and this accounted for two of them.
+
 ### Added — Research: a discovery sweep in front of the recon, and a quote gate behind it
 - **Step 2A discovery sweep.** The skill was verification-heavy and discovery-light: an internal survey run through it lost on *breadth* to a plain chatbox search — it missed the closest competitor's detail and missed an adjacent-category project outright, because every facet keyword was locked to the topic's own name. Quality control catches "is this claim right"; it cannot catch "the relevant thing never entered the run," because a missed entity produces no claim to check. 2A harvests names, aliases and category words with a fixed 6-field schema per round — including **required negative results**, since a dry round is otherwise indistinguishable from a lazy one — queries field-native indexes before generic web search, asks the adjacent-category question, and stops at 2 rounds by default (hard cap 3). Discovery and evidence-gathering stay **separate stages** on purpose: merged, the first plausible entity becomes the frame before the map exists.
 - **Source snapshots + `scripts/verify-quotes.py`, shipped inside both targets.** Central and high-risk claims persist the normalized body they hashed to `snapshots/<claim_id>.txt`; a hash whose text nobody kept can be recomputed by nobody. The gate matches each verbatim quote against that snapshot — **never against the worker artifact that produced it**, which would be the audited party supplying its own answer key. Cheap deterministic matching first; only failures reach a reviewer.

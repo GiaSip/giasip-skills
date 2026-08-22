@@ -1,6 +1,6 @@
 {
   "generator": "scripts/build-research-codex-target.py",
-  "profile": "candidate",
+  "profile": "codex",
   "semantic_contract": [
     "run-persistence",
     "discovery-sweep",
