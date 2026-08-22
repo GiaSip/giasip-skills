@@ -1,16 +1,17 @@
 # Fact-Check Protocol for High Fact-Density Tasks (v2.2 + v2.4)
 
-> Triggers when task has "hallucination tolerance = extremely low + citation requirement = academic-grade" (policy verification / BOM selection / Chinese primary source research / regulation clause verification / model license verification). Reports delivered directly from Recon **must undergo independent fact-checking** — the orchestrator and recon workers cannot self-score.
+> Triggers when task has "hallucination tolerance = extremely low + citation requirement = academic-grade" (policy verification / BOM selection / Chinese primary source research / regulation clause verification / model license verification). Reports delivered directly from Recon **must undergo independent fact-checking** — the orchestrator and recon workers cannot self-score. "Independent" means *not the party that produced the claim*; it does not mean *a different vendor*. See the baseline/enhancement split immediately below: the required path runs on one model and its own tools.
 
 ## Layer -1 — Deterministic quote gate (run first, costs nothing)
 
 Before any reviewer — human, model, or paid platform — run the quote checker that ships inside this skill. The orchestrator writes `<run_dir>/quotes.tsv` first (externalized input, same principle as `audit-input.tsv` below), then:
 
 ```bash
-python3 "<skill_dir>/scripts/verify-quotes.py" --run-dir "<run_dir>"
+python3 "<skill_dir>/scripts/verify-quotes.py" \
+  --run-dir "<run_dir>" --expected "<run_dir>/claims-expected.tsv"
 ```
 
-Cheap deterministic matching first, expensive judgment only on what it cannot settle. Each `quote` claim is compared against its snapshot under `<run_dir>/snapshots/` — **the source text, never a worker artifact**: checking a quote against the artifact that produced it is the audited party supplying its own answer key, the same hole `validate-audit.py` exists to close (snapshot paths pointing into `artifacts/` are refused outright). Malformed rows are input errors, not skipped rows.
+Cheap deterministic matching first, expensive judgment only on what it cannot settle. Each `quote` claim is compared against its snapshot under `<run_dir>/snapshots/` — **the source text, never a worker artifact**: checking a quote against the artifact that produced it is the audited party supplying its own answer key, the same hole `validate-audit.py` exists to close (snapshot paths pointing into `artifacts/` are refused outright). Malformed rows are input errors, not skipped rows. `--expected` is the independent claim roster, written before the gate runs: strict parsing protects rows, not coverage, so without it a quotes.tsv cut to one valid row would report one passing claim and exit 0.
 
 Boundary, stated no stronger: **given a snapshot accepted as authoritative**, the quote is a substring of it. It does not show the snapshot came from that URL, that quote and snapshot were not fabricated together, or that the source supports the claim — a passing quote still owes Mini Assurance its semantic audit. `unverifiable_capture` rows were verified by nothing and need manual review. URL reachability is separate and is not evidence.
 
@@ -23,26 +24,43 @@ For high-risk claims in the ledger **that have locators, read the primary source
 
 **Heterogeneous reviewers supplement blind spots; they don't replace missing primary source grounding.**
 
+## Baseline vs. Enhancement — read this before the layers
+
+**This protocol assumes one model and the tools it ships with.** That is the only configuration every install is guaranteed: an agent necessarily has one model, it does not necessarily have a second one, and it may have no subscription to any external Deep Research platform.
+
+So the layers split into two groups, and **the mandatory path uses only the first**:
+
+| | Layers | Needs |
+|---|---|---|
+| **Baseline — always runnable, always required when this protocol triggers** | **Layer -1** (deterministic quote gate), **Layer 0** (primary source locator direct reading), **Layer 2** (independent worker primary-source check), **Mini Assurance** | host model + web tools + a worker primitive |
+| **Enhancement — run when available, never a blocker** | **Layer 1** (external Deep Research fact-check), **cross-faction reviewer** | a paid DR subscription / a second vendor family |
+
+A run with no enhancement layers available is **fully conformant**. What it must not do is claim a check it did not perform: follow the same discipline Mini Assurance already uses for a missing worker slot — do the baseline layers, label the gap, and never report it as something stronger. Concretely, `fact_check_depth: baseline-only` in the audit, naming which enhancement layers were unavailable.
+
+> Getting this wrong in the other direction is worse than skipping a layer. A step marked **mandatory that some hosts cannot perform** teaches the reader that "mandatory" is negotiable, and that lesson spreads to the steps that really are non-negotiable — the quote gate, the ledger status caps, the audit roster.
+
 ## v2.4 Pre-Check Discipline
 
-1. **Default mode = Deep Research** (reverting "Pro Search normal mode" default) — fact-checking is a rigorous anchor-level task; **rigor > quota savings**; Deep Research quota exists for exactly this type of task; regular Pro Search is only for ad-hoc lightweight verification
-2. **Cross-faction mandatory discipline** (triggers only for same-faction content) — When evaluating an AI vendor's products, benchmarks involving its own models, or its industry narratives, **at least one reviewer from another vendor family must be used** for the final **false humility dimension judgment**; same-family workers cannot serve as the final arbiter — they are inherently blind to "appears self-deprecating but actually preserves faction advantage" high-dimensional PR-style bias
-3. **Cross-validation recommended pairing (v2.4)**: Perplexity DR (Layer 1 primary) + ChatGPT DR (cross-faction calibration, replacing Gemini) + Gemini DR (backup "expansion set blind spot scanning" — known "yi/billion" unit trap + excessive aggregate site acceptance)
+1. **When an external DR platform is available, prefer its Deep Research mode over its quick-search mode** — fact-checking is a rigorous anchor-level task; **rigor > quota savings**. This ranks two modes of a platform you already have; it does not require acquiring one
+2. **Cross-faction discipline** (triggers only for same-faction content) — When evaluating an AI vendor's products, benchmarks involving its own models, or its industry narratives, the final **false humility dimension judgment** should come from a reviewer in **another vendor family**; same-family workers are inherently blind to "appears self-deprecating but actually preserves faction advantage" high-dimensional PR-style bias, so a same-family reviewer cannot settle it. **When no second vendor family is reachable, this judgment is not available** — say so. Record `cross_faction: unavailable` and state that the false-humility dimension is unassessed; do not let a same-family reviewer stand in for it silently, and do not treat its verdict as a cross-faction result. An unassessed dimension that is labelled is recoverable; one that is quietly assessed by the wrong reviewer is not
+3. **Cross-validation pairing — enhancement tier, only meaningful if you already hold these subscriptions**: Perplexity DR (Layer 1) + ChatGPT DR (cross-faction calibration) + Gemini DR (backup "expansion set blind spot scanning" — known "yi/billion" unit trap + excessive aggregate site acceptance)
 4. **Data source 4-tier priority**: benchmark owner / regulation text / company official site (highest) > independent test > vendor self-report > aggregate site / mirror (lowest); large-gap numbers (≥10pp) must have owner direct citation; cross-tier discrepancies are not "conflicts" — both must be annotated
 
-## Fact-Check Two-Layer Flow
+## Fact-Check Flow
 
-### Layer 1 — Perplexity Deep Research Primary Fact-Check (~5 min; downgrade to Pro Search only for ad-hoc lightweight verification)
+### Layer 1 — External Deep Research fact-check (**enhancement**; skip when unavailable, label the skip)
 
-- Perplexity Deep Research recommended as primary — sentence-level citation + industry-leading citation transparency is its strength
-- Does not rely on training data, forces web search to pull authoritative sources
+- Only reachable with a subscription to an external DR platform. **Not required for conformance** — a run without one proceeds to Layer 2 and records `fact_check_depth: baseline-only`
+- When available, prefer a platform whose strength is sentence-level citation and citation transparency; the point is a checker that does not rely on training data and is forced to pull authoritative sources
 - Output: verdict table (✅/⚠️/❌/🟡) + inline citations
+- What is lost by skipping it, stated plainly so the trade-off is visible: a second retrieval stack over the whole claim set. Layer 2 is narrower by design — it checks 1-2 blind spots, not everything
 
-### Layer 2 — Independent Worker Primary-Source Check for Perplexity Blind Spots (~3 min, critical material only)
+### Layer 2 — Independent worker primary-source check (**baseline**; the mandatory backstop, ~3 min, critical material only)
 
-- Dispatch an independent worker through the current host to read EUR-Lex / vendor official / arxiv primary sources
-- Trigger conditions (any one): ① Perplexity single-source conclusion (no multi-source convergence) ② policy-sensitive topic ③ critical material (core scoring items affecting business decisions)
-- **Don't re-run everything**, only check 1-2 blind spots Perplexity didn't fully verify
+- Dispatch an independent worker through the current host to read primary sources directly (regulation text, vendor official pages, preprint servers)
+- Trigger conditions (any one): ① a conclusion resting on a single source with no multi-source convergence ② policy-sensitive topic ③ critical material (core items affecting a business decision)
+- **Don't re-run everything**, only check the 1-2 blind spots the earlier layers did not settle
+- **When Layer 1 was skipped, this layer's selection input changes**: with no external verdict table to point at the weak spots, choose targets from the ledger itself — every `central` claim that is `weak`, `unresolved`, or resting on a single non-owner source. Say how many were selected and how many were checked
 
 ### Conflict Arbitration Order
 
@@ -76,7 +94,7 @@ After the report draft is generated but before output to user, dispatch a **fres
 
 Reviewer input:
 - **Claim Ledger** (`<run_dir>/ledger.md`) + **evidence artifacts only** — the Round 1 (2B) and Round 2 worker outputs under `<run_dir>/artifacts/`, persisted by the orchestrator in Step 0 — + draft's "key claim list"
-  - **`artifacts/00-discovery.md` is excluded.** Step 2A reads nothing deeply and produces no ClaimCards; the file holds leads (including a chatbox pass) and index listings whose whole point is that they were *not* verified. Handing it to the reviewer under an `artifacts/*.md` wildcard would let a lead be labelled `supported` — which quietly reverses 2A's "lead, not evidence" rule. It may be used for a coverage question ("was this angle searched?"), never to support a claim.
+  - **`artifacts/00-discovery.md` is excluded.** Step 2A reads nothing deeply and produces no ClaimCards; the file holds leads — the named-entity list, plus whatever an optional external pass contributed — and index listings whose whole point is that they were *not* verified. Handing it to the reviewer under an `artifacts/*.md` wildcard would let a lead be labelled `supported` — which quietly reverses 2A's "lead, not evidence" rule. It may be used for a coverage question ("was this angle searched?"), never to support a claim.
 - **(Adjudication only) extracted `warrant_records[]`**: `conclusion_id / hypothesis_id / evidence_ids / warrant / qualifier / key_defeater / contrary_claim_ids` — so the reviewer can audit each load-bearing conclusion without reading the draft's conclusions section (the conclusion sentences arrive here as extracted entries, not by reading the draft)
 - **Task**: for each report topic sentence, assign one of 3 labels:
   - ✅ `supported`: artifact contains original text support (must attach artifact path + key sentence)
