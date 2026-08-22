@@ -287,9 +287,56 @@ def check_url(url: str, timeout: float) -> str:
         return f"error: {type(exc).__name__}"
 
 
+def parse_expected(path: Path) -> list[str]:
+    """The authoritative claim roster — written before the gate runs, kept apart from
+    quotes.tsv.
+
+    Strict row parsing protects rows; it cannot protect coverage. A quotes.tsv holding one
+    valid row is not malformed, so the gate would inspect that row, print
+    `checked 1 claim(s): 1 quote_ok` and exit 0 while 33 claims went unexamined — the
+    baseline would again be supplied by the party under audit, which is exactly what
+    `validate-audit.py` refuses. The roster is the independent denominator.
+
+    Accepts one claim_id per line, or a TSV whose first column is the claim_id. Blank lines
+    and `#` comments are ignored; a header line starting with `claim_id` is skipped.
+    """
+    ids: list[str] = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        first = line.split("\t", 1)[0].strip()
+        if not first or first == "claim_id":
+            continue
+        ids.append(first)
+    return ids
+
+
+def _fmt_ids(ids: list[str], limit: int = 8) -> str:
+    shown = ", ".join(ids[:limit])
+    return shown if len(ids) <= limit else f"{shown}, … (+{len(ids) - limit} more)"
+
+
 def verify(
-    run_dir: Path, quotes_path: Path, snapshots: Path, urls: bool, timeout: float
+    run_dir: Path, quotes_path: Path, snapshots: Path, urls: bool, timeout: float,
+    expected_path: Path | None = None,
 ) -> tuple[int, list[str]]:
+    if expected_path is None:
+        return 2, [
+            "❌ quote gate: --expected is required.",
+            "   Without an independent claim roster this gate reports the TSV's own row"
+            " count as coverage. Keep only one valid row and it prints"
+            " `checked 1 claim(s): 1 quote_ok`, exit 0, while every other claim goes"
+            " unexamined — a baseline supplied by the party under audit.",
+            "   Write the roster before the gate runs (one claim_id per line, or a TSV whose"
+            " first column is claim_id), e.g. <run_dir>/claims-expected.tsv, then:",
+            "     verify-quotes.py --run-dir <run_dir> --expected <run_dir>/claims-expected.tsv",
+        ]
+    if not expected_path.is_file():
+        return 2, [f"❌ quote gate: claim roster not found → {expected_path}",
+                   "   The roster is written before this gate runs; a missing one is an"
+                   " input error, never an empty roster."]
+
     if not quotes_path.is_file():
         return 2, [
             f"❌ quote gate: {quotes_path} not found",
@@ -306,6 +353,39 @@ def verify(
         return 2, [f"❌ quote gate: {exc}",
                    "   Malformed rows are refused outright. A tolerant parser drops rows"
                    " silently, and a dropped row is indistinguishable from a passing one."]
+
+    expected = parse_expected(expected_path)
+    if not expected:
+        return 2, [f"❌ quote gate: no claim_id parsed from {expected_path.name}",
+                   "   An empty roster would make every coverage check vacuously pass."]
+    dup_expected = sorted({i for i in expected if expected.count(i) > 1})
+    if dup_expected:
+        return 2, [f"❌ quote gate: roster repeats claim_id(s): {_fmt_ids(dup_expected)}",
+                   "   A duplicated id lets one checked row satisfy two roster entries."]
+
+    expected_set = set(expected)
+    actual = [r["claim_id"] for r in rows]
+    dup_actual = sorted({i for i in actual if actual.count(i) > 1})
+    if dup_actual:
+        return 2, [f"❌ quote gate: {quotes_path.name} repeats claim_id(s):"
+                   f" {_fmt_ids(dup_actual)}",
+                   "   Duplicate rows inflate the checked count without adding coverage."]
+
+    actual_set = set(actual)
+    missing = [i for i in expected if i not in actual_set]
+    extra = sorted(actual_set - expected_set)
+    if missing or extra:
+        msg = [f"❌ quote gate: {quotes_path.name} does not cover the roster"
+               f" ({len(expected_set)} claim(s) expected, {len(actual_set)} present)."]
+        if missing:
+            msg.append(f"   missing from quotes.tsv: {_fmt_ids(missing)}")
+            msg.append("   A claim absent from the TSV is not checked and not reported —"
+                       " silently dropping it is the failure this roster exists to catch.")
+        if extra:
+            msg.append(f"   not on the roster: {_fmt_ids(extra)}")
+            msg.append("   An id the roster never declared cannot be traced back to a"
+                       " ClaimCard; it inflates coverage with an unaccountable row.")
+        return 2, msg
 
     needs_snapshot = [r for r in rows
                       if r["evidence_kind"] == "quote"
@@ -418,12 +498,29 @@ def verify(
             " explained but no hashable body). They need manual review; do not read this"
             " exit code as 'all quotes verified'."
         )
-    if counts["ok"]:
+    if not counts["ok"]:
+        out.append("")
         out.append(
-            "   Boundary: given snapshots accepted as authoritative, each quote above is a"
-            " substring of one. This says nothing about whether the source supports the"
-            " claim, nor whether quote and snapshot were fabricated together."
+            f"   ❌ nothing was verified: 0 of {len(rows)} roster claim(s) produced a"
+            " machine-checked quote"
+            f" ({counts['locator']} locator, {unverifiable} unverifiable_capture)."
         )
+        out.append(
+            "   Exiting non-zero on purpose. A run where every claim is `locator` or"
+            " `unavailable:` is a legitimate state, but it must never print green — a green"
+            " gate that checked nothing is the decorative case this script exists to refuse."
+        )
+        return 1, out
+
+    out.append(
+        "   Boundary: given snapshots accepted as authoritative, each quote above is a"
+        " substring of one. This says nothing about whether the source supports the"
+        " claim, nor whether quote and snapshot were fabricated together."
+    )
+    out.append(
+        f"   Coverage: {counts['ok']}/{len(expected_set)} roster claim(s) machine-checked;"
+        " the rest are locator or unverifiable_capture and remain unanchored."
+    )
     return 0, out
 
 
@@ -433,6 +530,10 @@ def main() -> int:
     )
     p.add_argument("--run-dir", type=Path, required=True,
                    help="run directory holding quotes.tsv and snapshots/")
+    p.add_argument("--expected", type=Path,
+                   help="REQUIRED: authoritative claim roster written before this gate runs"
+                        " (one claim_id per line, or a TSV whose first column is claim_id)."
+                        " Without it the TSV supplies its own coverage baseline.")
     p.add_argument("--quotes", type=Path, help="override: path to quotes.tsv")
     p.add_argument("--snapshots", type=Path,
                    help="override: snapshot directory (must stay inside --run-dir)")
@@ -447,7 +548,9 @@ def main() -> int:
     quotes = (a.quotes or (run_dir / "quotes.tsv")).expanduser()
     snapshots = (a.snapshots or (run_dir / "snapshots")).expanduser()
 
-    code, msgs = verify(run_dir, quotes, snapshots, a.check_urls, a.timeout)
+    expected = a.expected.expanduser() if a.expected else None
+
+    code, msgs = verify(run_dir, quotes, snapshots, a.check_urls, a.timeout, expected)
     if code != 0 or not a.quiet:
         print("\n".join(msgs), file=sys.stderr if code != 0 else sys.stdout)
     return code

@@ -1,11 +1,11 @@
 ---
 name: research
-description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, decide whether a topic needs external Deep Research, or make an evidence-backed judgment or recommendation. Runs breadth-first Quick Recon, Claim Ledger gating, and an Adjudication Hypothesis Spine when needed. This generated target uses Codex native collaboration and web tools."
+description: "Use when the user asks to research, investigate, verify facts with sources, compare competitors, study a market or industry, review literature, prepare an evidence-backed report, decide whether a topic needs external Deep Research, or make an evidence-backed judgment or recommendation. Runs breadth-first Quick Recon, Claim Ledger gating, and an Adjudication Hypothesis Spine when needed. Explicit evaluation target compiled for Codex."
 ---
 
 > ✦ A **GiaSip** generated target · github.com/GiaSip/giasip-skills
 
-# GiaSip Research — Codex
+# Research Self-contained Candidate
 
 > Generated from the neutral canonical Research method. Do not edit this target by hand; reconcile changes into the canonical source and rebuild.
 
@@ -172,11 +172,25 @@ Run through the gate in order:
 claim_id	importance	evidence_kind	quote	snapshot	source_sha256	source_url
 ```
 
+**Column contract, in full** — these rules live in the gate; write them here too, because the orchestrator composes the file from this page, not from the source:
+
+| column | contract |
+|---|---|
+| `evidence_kind` | exactly `quote` or `locator`. Not a hedge, not a compound ("quote for X + locator for Y") — an implicit kind is what makes an unanchored claim indistinguishable from an unquotable one. |
+| `quote` | non-empty for `quote` rows, **including `unavailable:` rows**. An empty string is a substring of everything and would be reported as verified while anchoring nothing. |
+| `snapshot` | filename **relative to the snapshots directory** (`<claim_id>.txt`), not relative to the run directory. Empty for `locator` rows. A body that was read but could not be hashed writes `unavailable:<capture_method>` **here, in this column** — not in `source_sha256`. |
+| `source_sha256` | the recorded anchor, or the bare word `unavailable` when the snapshot column carries the escape hatch. |
+
+The **claim roster is a separate, mandatory input**: write `<run_dir>/claims-expected.tsv` (one `claim_id` per line) from the ClaimCards **before** composing `quotes.tsv`, and pass it with `--expected`:
+
 ```bash
-python3 "<skill_dir>/scripts/verify-quotes.py" --run-dir "<run_dir>"
+python3 "<skill_dir>/scripts/verify-quotes.py" \
+  --run-dir "<run_dir>" --expected "<run_dir>/claims-expected.tsv"
 ```
 
-The gate refuses to guess: a malformed row is a hard input error (exit 2), never a skipped row — a tolerant Markdown parser drops rows silently, and a dropped row is indistinguishable from a passing one. `locator` rows leave quote/snapshot empty; a quote whose body could be read but not hashed writes `unavailable:<capture_method>` and is reported as `unverifiable_capture` — legitimate, and explicitly **not** verified.
+**Why the roster is not optional.** Strict row parsing protects *rows*; it cannot protect *coverage*. A `quotes.tsv` holding one valid row is not malformed — so without a roster the gate inspects that row, prints `checked 1 claim(s): 1 quote_ok`, and exits 0 while every other claim goes unexamined. That is the same defect as a self-declared audit count: **the denominator would again come from the party under audit.** The roster is the independent denominator; a claim missing from `quotes.tsv`, an id the roster never declared, or a duplicated id are each a hard input error (exit 2).
+
+The gate refuses to guess: a malformed row is a hard input error (exit 2), never a skipped row — a tolerant Markdown parser drops rows silently, and a dropped row is indistinguishable from a passing one. `locator` rows leave quote/snapshot empty; a quote whose body could be read but not hashed writes `unavailable:<capture_method>` and is reported as `unverifiable_capture` — legitimate, and explicitly **not** verified. **A run in which nothing was machine-checked exits non-zero**, even when every row is individually legitimate: an all-`locator` / all-`unavailable` file is a valid state, but a green gate that checked nothing is precisely the decorative case this script exists to refuse.
 
 Failures are the only items that need a reviewer's attention; a passing quote still owes the ledger and Mini Assurance its *semantic* audit — "the quote is real" is not "the source supports the claim". State the boundary this way and no stronger: **given a snapshot accepted as authoritative**, the quote is a substring of it and the snapshot still hashes to what the ledger recorded. It does not show the snapshot came from that URL, that quote and snapshot were not fabricated together (usually the same worker made both — the defense against that is capturing outside the worker's control), or that extraction was complete. URL reachability (`--check-urls`) is reported separately and is never evidence.
 

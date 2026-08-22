@@ -1,37 +1,24 @@
 {
-  "name": "giasip",
-  "version": "1.7.0",
-  "description": "GiaSip evidence-gated Research for Codex.",
+  "name": "research-self-contained-candidate",
+  "version": "0.1.0",
+  "description": "Generated self-contained Codex Research target for matched evaluation.",
   "author": {
-    "name": "GiaSip",
-    "url": "https://github.com/GiaSip"
+    "name": "Agent System Research Lab"
   },
-  "homepage": "https://github.com/GiaSip/giasip-skills",
-  "repository": "https://github.com/GiaSip/giasip-skills",
-  "license": "MIT",
-  "keywords": [
-    "research",
-    "deep-research",
-    "fact-checking",
-    "codex"
-  ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "GiaSip Research",
-    "shortDescription": "Evidence-gated, breadth-first research for Codex.",
-    "longDescription": "Run breadth-first Quick Recon, control claims through a ledger and Hypothesis Spine, and escalate only unresolved gaps to external Deep Research.",
-    "developerName": "GiaSip",
+    "displayName": "Research Self-contained Candidate",
+    "shortDescription": "Compiled neutral Research workflow for Codex.",
+    "longDescription": "A generated self-contained Codex target retained for matched evaluation reproducibility.",
+    "developerName": "Agent System Research Lab",
     "category": "Productivity",
     "capabilities": [
       "Web Search",
       "Multi-Agent Research",
       "Write"
     ],
-    "websiteURL": "https://github.com/GiaSip/giasip-skills",
     "defaultPrompt": [
-      "Use $giasip:research to investigate this topic with sourced Quick Recon.",
-      "Use $giasip:research to compare these options and verify central claims.",
-      "Use $giasip:research to decide whether this topic needs Deep Research."
+      "Use $research-self-contained-candidate:research to investigate this topic with sourced Quick Recon."
     ]
   }
 }
