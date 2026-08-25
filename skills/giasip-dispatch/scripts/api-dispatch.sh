@@ -140,7 +140,7 @@ case "$PROVIDER" in
         minimax)  MODEL_ID="minimax/minimax-m3" ;;
         claude)   MODEL_ID="anthropic/claude-sonnet-5" ;;
         gpt)      MODEL_ID="openai/gpt-5.5" ;;
-        gemini)   MODEL_ID="google/gemini-3.1-pro-preview" ;;
+        gemini)   MODEL_ID="google/gemini-3.7-flash" ;;
         *)
           echo "[api-dispatch] OpenRouter 别名表无 '$MODEL'。" >&2
           echo "[api-dispatch] 用 --model-id <raw> 透传，或查 https://openrouter.ai/models" >&2

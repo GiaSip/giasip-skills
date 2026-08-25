@@ -21,13 +21,22 @@ set -uo pipefail
 
 # ── Config ───────────────────────────────────────────────────────────────
 
-# Fallback chain: preview pro → GA pro (early) → preview flash → GA flash
-# Rationale: when preview pool is congested, preview flash may share the same
-# pool and not escape. GA models go through Vertex AI dedicated capacity.
+# Fallback chain: current best → preview pro (long-chain safety net) → GA pro (early)
+#                 → GA flash → GA flash (older)
+# Rationale: when the preview pool is congested, GA models go through Vertex AI
+# dedicated capacity and can escape it.
+#
+# Head is a Flash model on purpose. Google's Pro tier has not moved since
+# gemini-3.1-pro-preview and is still preview, while Flash shipped 3.5 → 3.6 → 3.7.
+# As of 2026-08 the 3.7 Flash head scores above 3.1-Pro on Artificial Analysis'
+# intelligence index (56.0 vs 47.7) at roughly a third of the blended price.
+# 3.1-Pro stays second as a fallback for genuinely long reasoning chains.
+# Re-check this ordering when a new tier ships — don't assume it still holds.
 FALLBACK_CHAIN=(
+  "gemini-3.7-flash"
   "gemini-3.1-pro-preview"
   "gemini-2.5-pro"
-  "gemini-3.1-flash-preview"
+  "gemini-3.5-flash"
   "gemini-2.5-flash"
 )
 

@@ -21,7 +21,7 @@ Each alias points at a **sensible current model** per vendor (every alias below 
 | `minimax` | `minimax/minimax-m3` | |
 | `claude` | `anthropic/claude-sonnet-5` | bonus — not reachable via the China aggregator |
 | `gpt` | `openai/gpt-5.5` | bonus |
-| `gemini` | `google/gemini-3.1-pro-preview` | bonus — also handles vision via API |
+| `gemini` | `google/gemini-3.7-flash` | bonus — also handles vision via API. Flash, not Pro: see note below |
 
 ### SiliconFlow 硅基流动 (China) — `https://api.siliconflow.cn/v1` · [models page](https://siliconflow.cn/models)
 
@@ -52,8 +52,15 @@ IDs below were **live-tested** against SiliconFlow on 2026-07-19 (each returned 
 | CLI | Model | Best For |
 |-----|-------|----------|
 | Codex | GPT-5.5 (xhigh reasoning) | Code review, architecture analysis, deep reasoning |
-| Gemini | gemini-3.1-pro-preview (1M context) | Vision/PDF parsing, large context tasks, broad knowledge |
+| Gemini | gemini-3.7-flash (1M context) | Vision/PDF parsing, large context tasks, broad knowledge |
 | Kimi | K3 (Chinese-native thinking model) | Chinese business analysis, strategic assessment, creative writing |
+
+> **Why Flash and not Pro for Gemini.** Google's Pro tier has not moved since
+> `gemini-3.1-pro-preview` and is still labelled preview, while Flash shipped 3.5 → 3.6 → 3.7.
+> As of 2026-08, `gemini-3.7-flash` beats 3.1-Pro on Artificial Analysis' intelligence index
+> (56.0 vs 47.7) at roughly a third of the blended price, so the usual "Pro beats Flash" prior
+> is the wrong way round for this vendor right now. Re-check before assuming it still holds —
+> that's the point of the note, not the specific numbers.
 
 ## Multi-Dispatch Lineup Recommendations
 
