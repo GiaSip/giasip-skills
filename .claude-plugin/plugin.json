@@ -1,7 +1,7 @@
 {
   "name": "giasip-skills",
-  "version": "1.8.0",
-  "description": "GiaSip skills for evidence-gated research orchestration and multi-model dispatch.",
+  "version": "2.0.0",
+  "description": "GiaSip skills for sourced research and multi-model dispatch.",
   "author": {
     "name": "GiaSip",
     "url": "https://github.com/GiaSip"

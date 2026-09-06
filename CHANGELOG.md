@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-09-06
+
+### ⚠️ BREAKING — `giasip-research` rewritten as an 18-line goal + hard-rules prompt
+
+The skill no longer runs a Claim Ledger, ClaimCards, a discovery sweep, Mini Assurance, or a Hypothesis Spine. It now states a goal, a method (2-3 parallel facets, ≤15 fetches per sub-agent, one `report.md` with a "To verify" section), and four hard rules (source URL on every fact, "not found" over memory, no `rm -rf`, a verification pass before anything ships under a real name/price/legal claim).
+
+- **Removed**: the Claim Ledger Gate, ClaimCard schema, discovery sweep, Hypothesis Spine, Mini Assurance / fresh-reviewer audit, Deep Research platform matching and reflow, the `references/` and `scripts/` directories under `skills/giasip-research/` and `plugins/giasip/skills/research/`, `docs/claim-ledger-method.md`, `examples/`, and `scripts/sync_codex_plugin.py` (the canonical-build pipeline that generated both targets).
+- **Why**: two controlled runs (2026-09-05/06) growing the skill from 0 to 144 to 433 lines showed precision flat, recall narrower, and cost 6–13× higher for the added structure.
+- **Verification is now out of scope for this skill.** It was never fully in scope, but the removed machinery blurred the line; a dedicated verification pass is the correct place for claim-level auditing.
+- **New**: `skills/giasip-research/FEEDBACK.md`, an append-only point-of-use feedback log — the only input that may change `SKILL.md` going forward.
+- Both install targets (`skills/giasip-research/SKILL.md` and `plugins/giasip/skills/research/SKILL.md`) are now hand-maintained copies of one source; there is no longer a build/check step.
+
 ## [1.8.0] — 2026-08-22
 
 ### ⚠️ BREAKING — `scripts/verify-quotes.py` now requires `--expected`

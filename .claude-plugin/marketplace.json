@@ -1,8 +1,8 @@
 {
   "name": "giasip-skills",
   "displayName": "GiaSip Skills",
-  "description": "GiaSip skills for evidence-gated research orchestration and multi-model dispatch.",
-  "version": "1.8.0",
+  "description": "GiaSip skills for sourced research and multi-model dispatch.",
+  "version": "2.0.0",
   "owner": {
     "name": "GiaSip",
     "url": "https://github.com/GiaSip"
@@ -12,8 +12,8 @@
   "plugins": [
     {
       "name": "giasip-skills",
-      "description": "Evidence-gated research orchestration & multi-model dispatch skills.",
-      "version": "1.8.0",
+      "description": "Sourced research orchestration & multi-model dispatch skills.",
+      "version": "2.0.0",
       "source": "./"
     }
   ]

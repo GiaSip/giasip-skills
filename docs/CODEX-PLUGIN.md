@@ -1,6 +1,7 @@
 # GiaSip Codex Plugin
 
-GiaSip Research has two Codex distribution surfaces backed by one neutral canonical workflow:
+GiaSip Research has two Codex distribution surfaces, both maintained by hand from one
+source file.
 
 | Surface | Install | Invoke |
 |---|---|---|
@@ -9,19 +10,15 @@ GiaSip Research has two Codex distribution surfaces backed by one neutral canoni
 
 ## Architecture
 
-- `agent-skills/portable/research/` in the neutral agent-system checkout is the only
-  hand-edited behavioral source of truth.
-- `skills/giasip-research/` is a generated standalone target that preserves backward
-  compatibility for Claude Code and standalone Agent Skills installs.
+- `skills/giasip-research/SKILL.md` at the repository root is the hand-maintained source of truth.
 - `plugins/giasip/.codex-plugin/plugin.json` defines the stable `giasip` component namespace.
-- `plugins/giasip/skills/research/` is a separately generated Codex-native target; it
-  contains only the Codex runtime contract and uses the `$giasip:research` namespace.
-- Both targets carry `BUILD-PROVENANCE.json` with identical canonical source hashes
-  and semantic invariants.
+- `plugins/giasip/skills/research/SKILL.md` is a manually kept copy of the root skill, with only
+  the frontmatter `name:` changed to `research` to match the plugin namespace.
 - `.agents/plugins/marketplace.json` exposes the Plugin from this Git repository.
 - `giasip-dispatch` is **not bundled** because it remains Claude Code-native.
 
-This keeps `$giasip-research` backward-compatible for standalone users while providing the shorter, extensible `$giasip:research` Plugin namespace.
+This keeps `$giasip-research` backward-compatible for standalone users while providing the shorter,
+extensible `$giasip:research` Plugin namespace.
 
 ## Install
 
@@ -32,18 +29,11 @@ codex plugin add giasip@giasip-skills
 
 After installation, start a new Codex task and invoke `$giasip:research`.
 
-## Maintain the generated bundle
+## Maintain the bundled copy
 
-After changing the neutral canonical Research method, regenerate and verify both targets:
-
-```bash
-python3 scripts/sync_codex_plugin.py --canonical-root ~/Projects/active/agent-system
-python3 scripts/sync_codex_plugin.py --canonical-root ~/Projects/active/agent-system --check
-```
-
-Never edit either generated Research directory directly. Without the canonical checkout,
-`--check` still verifies that both checked-in targets share one provenance and identical
-references; with `--canonical-root`, it also performs a byte-for-byte rebuild check.
+After changing `skills/giasip-research/SKILL.md`, copy it to
+`plugins/giasip/skills/research/SKILL.md` and change only the frontmatter `name:` to `research`.
+There is no generator script — the two files are kept in sync by hand.
 
 ## Validate locally
 

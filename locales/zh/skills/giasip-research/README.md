@@ -1,19 +1,17 @@
-# GiaSip Research 中文阅读说明
+> 中文阅读版（reading edition，不可作为第二个 skill 被发现）。行为真源是仓库根目录的英文 `skills/giasip-research/SKILL.md`。
+>
+> 调用：Claude Code 用 `/giasip-research`，Codex 用 `$giasip-research`。
 
-> 本目录不是第二份可安装 Skill，也不单独维护执行逻辑。
+# GiaSip Research
 
-`giasip-research` 的唯一行为真源位于仓库根目录的 [`skills/giasip-research/SKILL.md`](../../../../skills/giasip-research/SKILL.md)。该文件同时定义：
+**目标**：帮用户拿到回答其问题的准确信息。准确是硬约束，覆盖面是手段（抓得多才可能碰到准的）。
 
-- 共享的广度优先 Quick Recon、Claim Ledger、Deep Research 升级和 Mini Assurance 流程；
-- 论证/决策题（Adjudication）的**假设脊椎**（论证效度第三轴：广度后立竞争假设（含 null）→ 证伪式 Round 2 → warrant-gated / underdetermined 结论；检索/Mapping 题按设计跳过，防僵硬），详见 [`references/hypothesis-spine.md`](../../../../skills/giasip-research/references/hypothesis-spine.md)；
-- Claude Code 的 `WebSearch` / `WebFetch` / SubAgent 映射；
-- Codex 的 web 工具 / `spawn_agent` 映射；
-- worker 或 reviewer 并发槽不可用时的显式降级路径。
+**做法**：把题目拆成 2–3 个互补切面，并行派子 agent 各查一个切面，只查不下结论。每个子 agent 最多 15 次搜索/抓取后即交回精简发现，不落盘。主 agent 综合写一份 `report.md`：按用户的问题逐一回答，列出全部找到的实体并带 URL，正文 ≤200 行，末尾单独一节「待核实」。
 
-安装与触发：
+**纪律（硬形状）**
+- 每条事实带来源 URL；官方 / owner 一手源优先，标注来源类型（一手 / 第三方 / 媒体）。
+- 查不到就写「查不到」，不凭记忆补；日期写绝对日期；GitHub star / 时间用 `gh api` 快照。
+- 只在输出目录内读写；禁止 `rm -rf`。
+- 对外署名、采购报价、法规 / 金融结论 → 交付前对 claim 做一轮核验。
 
-- Claude Code：`/giasip-research`
-- Codex：`$giasip-research`
-- 两者均保留 `giasip-research` 这一 GiaSip 品牌名。
-
-中文用户可以直接用中文提出调研需求；主 Skill 的 `description` 已声明支持 Chinese，不需要再安装一份中文 `SKILL.md`。
+**元规则**：本 skill 只接受使用点的人工评论（同目录 `FEEDBACK.md`）作为修改依据，AI 审读意见不直接改。2026-09-05/06 两轮对照实验：0 → 144 → 433 行精度持平、召回收窄、花费 6–13 倍。

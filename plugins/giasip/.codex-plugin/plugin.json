@@ -1,7 +1,7 @@
 {
   "name": "giasip",
-  "version": "1.8.0",
-  "description": "GiaSip evidence-gated Research for Codex.",
+  "version": "2.0.0",
+  "description": "GiaSip sourced Research for Codex.",
   "author": {
     "name": "GiaSip",
     "url": "https://github.com/GiaSip"
@@ -11,15 +11,14 @@
   "license": "MIT",
   "keywords": [
     "research",
-    "deep-research",
-    "fact-checking",
+    "sourced-research",
     "codex"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "GiaSip Research",
-    "shortDescription": "Evidence-gated, breadth-first research for Codex.",
-    "longDescription": "Run breadth-first Quick Recon, control claims through a ledger and Hypothesis Spine, and escalate only unresolved gaps to external Deep Research.",
+    "shortDescription": "Sourced, parallel-facet research for Codex.",
+    "longDescription": "Split the question into 2-3 facets, run one sub-agent per facet in parallel, and write a single report with a source URL on every fact.",
     "developerName": "GiaSip",
     "category": "Productivity",
     "capabilities": [
@@ -29,9 +28,9 @@
     ],
     "websiteURL": "https://github.com/GiaSip/giasip-skills",
     "defaultPrompt": [
-      "Use $giasip:research to investigate this topic with sourced Quick Recon.",
-      "Use $giasip:research to compare these options and verify central claims.",
-      "Use $giasip:research to decide whether this topic needs Deep Research."
+      "Use $giasip:research to investigate this topic with sourced findings.",
+      "Use $giasip:research to compare these options with a URL on every fact.",
+      "Use $giasip:research to look this up and report what's not found."
     ]
   }
 }

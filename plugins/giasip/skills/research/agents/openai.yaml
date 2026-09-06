@@ -1,6 +1,0 @@
-interface:
-  display_name: "GiaSip Research"
-  short_description: "Evidence-gated research for Codex"
-  default_prompt: "Use $giasip:research to map this topic broadly, verify central claims with sources, and decide whether external Deep Research is needed."
-policy:
-  allow_implicit_invocation: true
