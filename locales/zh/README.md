@@ -12,6 +12,12 @@
 
 仓库还包含面向 **Claude Code** 的多模型调度工具 **GiaSip Dispatch**。**Codex 插件只包含 Research**。
 
+## 35 秒演示
+
+![Research 演示：官方来源、建议与待核事项](../../docs/assets/research-walkthrough.gif)
+
+这是一次比较 VHS 与 asciinema + agg 的真实文档调研结果导览，采用中文字幕和英文报告摘录。经过剪辑排版，非实时录屏或速度测试；该调研没有安装或实测这两套工具，并在报告中保留了这些待核事项。[试试同一个问题](../../docs/research-example.md)。
+
 
 | 技能 | 它给你什么 |
 |------|-----------|

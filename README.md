@@ -17,6 +17,12 @@
 
 The repository also includes **GiaSip Dispatch**, multi-model dispatch tooling for **Claude Code**. The **Codex plugin contains Research only**.
 
+## 35-second walkthrough
+
+![Research walkthrough: official sources, a recommendation, and open checks](docs/assets/research-walkthrough.gif)
+
+Chinese captions with English report excerpts. This edited walkthrough shows the output of one documentation-based research task comparing VHS with asciinema + agg. It is not a live screen recording or a speed benchmark. The task did not install or test those tools; its report keeps those checks explicit. [Try the same question](docs/research-example.md).
+
 
 | Skill | What it gives you |
 |-------|-------------------|
