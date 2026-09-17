@@ -5,9 +5,18 @@
 ![Claude Code](https://img.shields.io/badge/claude--code-compatible-orange)
 ![Codex](https://img.shields.io/badge/codex-compatible-black)
 
-> **`giasip-research` gets the user accurate answers to their question.** It splits the question into 2–3 complementary facets and runs one sub-agent per facet in parallel, each capped at 15 searches/fetches; the main agent then writes a single `report.md` with every finding, its source URL, and a separate "To verify" section. Hard rules: every fact carries a source URL, "not found" beats a guess from memory, and it never runs `rm -rf`. Two controlled runs (2026-09-05/06) showed growing the skill from 0 to 144 to 433 lines left precision flat, narrowed recall, and cost 6–13× more — so it stays at 18 lines. Verification is a separate pass, not part of research.
->
-> The repo also ships **`giasip-dispatch`**, a multi-model dispatcher for routing tasks to Codex / Gemini / Kimi / DeepSeek / Doubao / Qwen / GLM / MiniMax.
+**Turn a research question into a report with source links and an explicit list of what still needs checking.** GiaSip Research is a reusable workflow for Codex and Claude Code. It splits the question across complementary research facets, then brings the findings together in one `report.md`.
+
+[简体中文](locales/zh/README.md) · [Try Research](#quick-start) · [Example request and output](docs/research-example.md)
+
+## What you get
+
+- **An answer you can inspect:** findings linked to their sources, with unresolved questions in a separate **To verify** section.
+- **A repeatable research workflow:** complementary facets, bounded searching, and one report instead of disconnected search results.
+- **A clear boundary:** a source link is not proof that a claim is true. Verification remains a separate step.
+
+The repository also includes **GiaSip Dispatch**, multi-model dispatch tooling for **Claude Code**. The **Codex plugin contains Research only**.
+
 
 | Skill | What it gives you |
 |-------|-------------------|
@@ -206,3 +215,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 ## License
 
 MIT © GiaSip
+
+## Follow the project
+
+If this workflow is useful, star the repository to find it again. Tried it and hit a problem? Open an issue with your host, installation method, and a small reproducible example. Please leave credentials and private research material out of public issues.

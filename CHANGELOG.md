@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Documentation
+- Reworked the English and Chinese README openings around the user outcome, added an illustrative research request, and clarified that the Codex plugin includes Research only. These documentation changes do not change skill behavior.
+
 ## [2.0.0] — 2026-09-06
 
 ### ⚠️ BREAKING — `giasip-research` rewritten as an 18-line goal + hard-rules prompt

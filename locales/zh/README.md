@@ -1,10 +1,17 @@
 # giasip-skills
 
-> ✦ GiaSip 的跨运行时 Agent 技能集 · github.com/GiaSip
->
-> **`giasip-research` 帮用户拿到回答其问题的准确信息。** 把题目拆成 2–3 个互补切面，并行派子 agent 各查一个切面，每个最多 15 次搜索/抓取；主 agent 综合写一份 `report.md`，附全部发现、来源 URL，末尾单独一节「待核实」。硬规则：每条事实带来源 URL，查不到就写「查不到」而非凭记忆补，禁止 `rm -rf`。2026-09-05/06 两轮对照实验：把这个 skill 从 0 行长到 144 行再到 433 行，精度持平、召回反而收窄、花费 6–13 倍——所以它停在 18 行。核验是独立的一道工序，不属于调研本身。
->
-> 仓库同时提供 **`giasip-dispatch`**，一个把任务派发给 Codex / Gemini / Kimi / DeepSeek / 豆包 / Qwen / GLM / MiniMax 的多模型调用器。
+**把一个调研问题整理成带来源链接、并明确列出待核事项的报告。** GiaSip Research 是给 Codex 和 Claude Code 使用的可复用研究工作流：把问题拆成互补切面检索，再综合成一份 `report.md`。
+
+[English](../../README.md) · [快速开始](#快速开始) · [问题与输出示例（英文）](../../docs/research-example.md)
+
+## 你会得到什么
+
+- **可以追查的答案**：发现旁边附来源，未解决的问题单列到「待核实」。
+- **可重复使用的研究流程**：互补切面、有预算的检索，以及一份综合报告。
+- **明确的能力边界**：有来源不等于结论已核实，核验仍是独立步骤。
+
+仓库还包含面向 **Claude Code** 的多模型调度工具 **GiaSip Dispatch**。**Codex 插件只包含 Research**。
+
 
 | 技能 | 它给你什么 |
 |------|-----------|
@@ -161,3 +168,7 @@ export DISPATCH_PROVIDER=openrouter    # 或 siliconflow
 ## License
 
 MIT © GiaSip
+
+## 关注项目
+
+如果这个工作流对你有用，欢迎 Star，方便以后找到。试用遇到问题时，可以提交 Issue，附上使用的 host、安装方式和最小复现示例；请不要把凭据或私人调研材料放进公开 Issue。
